@@ -425,7 +425,7 @@ int main(int argc, char *argv[])
     delete swarmAgent;
     swarmAgent = new tAgent;
     //swarmAgent->setupRandomAgent(5000);
-    swarmAgent->loadAgent("startPrey.genome");
+    swarmAgent->loadAgent((char *)"startPrey.genome");
     
     delete predatorAgent;
     predatorAgent = new tAgent;
