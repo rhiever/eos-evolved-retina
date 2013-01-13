@@ -393,8 +393,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                         for (int j = 0; j < swarmSize; ++j)
                         {
                             // other prey must be close to target prey and within predator's retina
-                            //if (!preyDead[j] && preyDists[i][j] < safetyDist && predDists[j] < predatorVisionRange && fabs(calcAngle(predX, predY, predA, preyX[j], preyY[j])) < predatorVisionAngle)
-                            if (!preyDead[j] && predDists[j] < predatorVisionRange && fabs(calcAngle(predX, predY, predA, preyX[j], preyY[j])) < predatorVisionAngle)
+                            if (!preyDead[j] && preyDists[i][j] < safetyDist && predDists[j] < predatorVisionRange && fabs(calcAngle(predX, predY, predA, preyX[j], preyY[j])) < predatorVisionAngle)
                             {
                                 ++nearbyCount;
                             }
@@ -446,18 +445,12 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                         //don't bother if an agent is too far
                         if(d < preyVisionRange)
                         {
-                            // ignore if agent i isn't even facing agent j (won't be within retina)
-                            if (calcDistanceSquared(preyX[i] + cosLookup[(int)preyA[i]],
-                                                    preyY[i] + sinLookup[(int)preyA[i]],
-                                                    preyX[j], preyY[j]) < d)
+                            double angle = calcAngle(preyX[i], preyY[i], preyA[i], preyX[j], preyY[j]);
+                            
+                            //here we have to map the angle into the sensor, btw: angle in degrees
+                            if(fabs(angle) < preyVisionAngle) // prey has a limited vision field infront of it
                             {
-                                double angle = calcAngle(preyX[i], preyY[i], preyA[i], preyX[j], preyY[j]);
-                                
-                                //here we have to map the angle into the sensor, btw: angle in degrees
-                                if(fabs(angle) < preyVisionAngle) // prey has a limited vision field infront of it
-                                {
-                                    swarmAgent->states[(int)(angle / (preyVisionAngle / ((double)preySensors / 2.0)) + ((double)preySensors / 2.0)) + (i * maxNodes)] = 1;
-                                }
+                                swarmAgent->states[(int)(angle / (preyVisionAngle / ((double)preySensors / 2.0)) + ((double)preySensors / 2.0)) + (i * maxNodes)] = 1;
                             }
                         }
                     }
@@ -597,7 +590,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
 
 
 // calculates the distance^2 between two points
-double tGame::calcDistanceSquared(double fromX, double fromY, double toX, double toY)
+inline double tGame::calcDistanceSquared(double fromX, double fromY, double toX, double toY)
 {
     double diffX = fromX - toX;
     double diffY = fromY - toY;
@@ -606,7 +599,7 @@ double tGame::calcDistanceSquared(double fromX, double fromY, double toX, double
 }
 
 // calculates the angle between two agents
-double tGame::calcAngle(double fromX, double fromY, double fromAngle, double toX, double toY)
+inline double tGame::calcAngle(double fromX, double fromY, double fromAngle, double toX, double toY)
 {
     double Ux = 0.0, Uy = 0.0, Vx = 0.0, Vy = 0.0;
     
@@ -619,12 +612,11 @@ double tGame::calcAngle(double fromX, double fromY, double fromAngle, double toX
     int firstTerm = (int)((Ux * Vy) - (Uy * Vx));
     int secondTerm = (int)((Ux * Vx) + (Uy * Vy));
     
-    if (fabs(firstTerm) < 1000 && fabs(secondTerm) < 1000)
+    try
     {
         return atan2Lookup[firstTerm + 1000][secondTerm + 1000];
     }
-    
-    else
+    catch (...)
     {
         return atan2(firstTerm, secondTerm) * 180.0 / cPI;
     }
@@ -666,7 +658,7 @@ void tGame::recalcPredDistTable(double preyX[], double preyY[], bool preyDead[],
 }
 
 // recalculates the predator and prey distance lookup tables
-void tGame::recalcPredAndPreyDistTable(double preyX[], double preyY[], bool preyDead[],
+inline void tGame::recalcPredAndPreyDistTable(double preyX[], double preyY[], bool preyDead[],
                                        double predX, double predY,
                                        double predDists[swarmSize], double preyDists[swarmSize][swarmSize])
 {

@@ -55,13 +55,13 @@ public:
     string executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_file, bool report, double safetyDist, double predatorVisionRange, int killDelay, double confusionMultiplier);
     tGame();
     ~tGame();
-    double calcDistanceSquared(double fromX, double fromY, double toX, double toY);
-    double calcAngle(double fromX, double fromY, double fromAngle, double toX, double toY);
+    inline double calcDistanceSquared(double fromX, double fromY, double toX, double toY);
+    inline double calcAngle(double fromX, double fromY, double fromAngle, double toX, double toY);
     void calcSwarmCenter(double preyX[], double preyY[], bool preyDead[], double& preyCenterX, double& preyCenterY);
     void recalcPredDistTable(double preyX[], double preyY[], bool preyDead[],
                              double predX, double predY,
                              double predDists[swarmSize]);
-    void recalcPredAndPreyDistTable(double preyX[], double preyY[], bool preyDead[],
+    inline void recalcPredAndPreyDistTable(double preyX[], double preyY[], bool preyDead[],
                                     double predX, double predY,
                                     double predDists[swarmSize], double preyDists[swarmSize][swarmSize]);
     void applyBoundary(double& positionVal);
