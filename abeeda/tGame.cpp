@@ -28,15 +28,17 @@
 #define cPI 3.14159265
 
 // simulation-specific constants
-#define preyVisionRange 100.0 * 100.0
-#define preyVisionAngle 180.0 / 2.0
-#define preySensors 12
-#define predatorSensors 12
-#define totalStepsInSimulation 2000
-#define gridX 256.0
-#define gridY 256.0
-#define killDist 5.0 * 5.0
-#define boundaryDist 250.0
+#define preyVisionRange         100.0 * 100.0
+#define preyVisionAngle         180.0 / 2.0
+#define preySensors             12
+#define predatorSensors         12
+#define totalStepsInSimulation  2000
+#define gridX                   384.0
+#define gridY                   384.0
+#define gridXAcross             2.0 * gridX
+#define gridYAcross             2.0 * gridY
+#define collisionDist           5.0 * 5.0
+#define boundaryDist            gridX - sqrt(collisionDist)
 
 // precalculated lookup tables for the game
 double cosLookup[360];
@@ -117,12 +119,12 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
         {
             goodPos = true;
             
-            preyX[i] = 0.5 * ((double)(randDouble * gridX * 2.0) - gridX);
-            preyY[i] = 0.5 * ((double)(randDouble * gridY * 2.0) - gridY);
+            preyX[i] = 0.95 * ((double)(randDouble * gridX * 2.0) - gridX);
+            preyY[i] = 0.95 * ((double)(randDouble * gridY * 2.0) - gridY);
             
             for (int j = 0; j < i; ++j)
             {
-                if (calcDistanceSquared(preyX[i], preyY[i], preyX[j], preyY[j]) < safetyDist)
+                if (calcDistanceSquared(preyX[i], preyY[i], preyX[j], preyY[j]) <= safetyDist)
                 {
                     goodPos = false;
                     break;
@@ -382,7 +384,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                 for(int i = 0; !killed && i < swarmSize; ++i)
                 {
                     // victim prey must be within kill range
-                    if (!preyDead[i] && (predDists[i] < killDist) && fabs(calcAngle(predX, predY, predA, preyX[i], preyY[i])) < predatorVisionAngle)
+                    if (!preyDead[i] && (predDists[i] < collisionDist) && fabs(calcAngle(predX, predY, predA, preyX[i], preyY[i])) < predatorVisionAngle)
                     {
                         ++numAttacks;
                         
@@ -679,8 +681,7 @@ void tGame::recalcPredAndPreyDistTable(double preyX[], double preyY[], bool prey
             {
                 if (!preyDead[j])
                 {
-                    preyDists[i][j] = calcDistanceSquared(preyX[i], preyY[i], preyX[j], preyY[j]);
-                    preyDists[j][i] = preyDists[i][j];
+                    preyDists[i][j] = preyDists[j][i] = calcDistanceSquared(preyX[i], preyY[i], preyX[j], preyY[j]);
                 }
             }
         }
