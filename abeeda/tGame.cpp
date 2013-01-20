@@ -98,6 +98,8 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     double predA = (int)(randDouble * 360.0);
     double predFocusAngle = 0.0;
     
+    vector<double> predFocusAngles;
+    
     // the maximum angle of the predator focused retina
     double predatorFocusedVisionAngle = predatorAgent->focusedVisionAngle;
     
@@ -279,6 +281,10 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
             
             swarmDensityCounts.push_back(avgWithin);
             
+            
+            // log the predator focus angle
+            predFocusAngles.push_back(predFocusAngle);
+            
         }
         /*       END OF DATA GATHERING       */
         
@@ -296,7 +302,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
         {
             if (!preyDead[i])
             {
-                // don't bother if an agent is too far
+                // don't bother if an agent is too far away
                 if (predDists[i] < predatorVisionRange)
                 {
                     double angle = calcAngle(predX, predY, predA, preyX[i], preyY[i]);
@@ -321,7 +327,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
             }
         }
         
-        // indicate which way the predator focus is looking
+        // indicate which way the predator focus is facing relative to predator facing
         predatorAgent->states[2 * predatorSensors + (int)(predFocusAngle / (predatorCoarseVisionAngle / ((double)predatorSensors / 2.0)) + ((double)predatorSensors / 2.0))] = 1;
         
         // activate the predator agent's brain
@@ -410,7 +416,9 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                 for(int i = 0; !killed && i < swarmSize; ++i)
                 {
                     // victim prey must be within kill range
-                    if (!preyDead[i] && (predDists[i] < collisionDist) && fabs(calcAngle(predX, predY, predA, preyX[i], preyY[i])) < predatorFocusedVisionAngle)
+                    if (!preyDead[i] &&
+                        predDists[i] < collisionDist &&
+                        fabs(calcAngle(predX, predY, predFocusAngle, preyX[i], preyY[i])) < predatorFocusedVisionAngle)
                     {
                         ++numAttacks;
                         
@@ -419,7 +427,10 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                         for (int j = 0; j < swarmSize; ++j)
                         {
                             // other prey must be close to target prey and within predator's retina
-                            if (!preyDead[j] && preyDists[i][j] < safetyDist && predDists[j] < predatorVisionRange && fabs(calcAngle(predX, predY, predA, preyX[j], preyY[j])) < predatorFocusedVisionAngle)
+                            if (!preyDead[j] &&
+                                preyDists[i][j] < safetyDist &&
+                                predDists[j] < predatorVisionRange &&
+                                fabs(calcAngle(predX, predY, predFocusAngle, preyX[j], preyY[j])) < predatorFocusedVisionAngle)
                             {
                                 ++nearbyCount;
                             }
@@ -478,8 +489,9 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                             {
                                 double angle = calcAngle(preyX[i], preyY[i], preyA[i], preyX[j], preyY[j]);
                                 
-                                //here we have to map the angle into the sensor, btw: angle in degrees
-                                if(fabs(angle) < preyVisionAngle) // prey has a limited vision field infront of it
+                                // map the angle into the sensor; angle in degrees
+                                // prey has a limited vision field in front of it
+                                if(fabs(angle) < preyVisionAngle)
                                 {
                                     swarmAgent->states[(int)(angle / (preyVisionAngle / ((double)preySensors / 2.0)) + ((double)preySensors / 2.0)) + (i * maxNodes)] = 1;
                                 }
@@ -513,8 +525,8 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
         {
             if (!preyDead[i])
             {
-                //                                  node 31                                                         node 30
-                int action = ((swarmAgent->states[(maxNodes - 1) + (i * maxNodes)] & 1) << 1) + (swarmAgent->states[(maxNodes - 2) + (i * maxNodes)] & 1);
+                int action = ((swarmAgent->states[(maxNodes - 1) + (i * maxNodes)] & 1) << 1) +     // node 31
+                                (swarmAgent->states[(maxNodes - 2) + (i * maxNodes)] & 1);          // node 30
                 
                 switch(action)
                 {
@@ -594,7 +606,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     // output to data file, if provided
     if (data_file != NULL)
     {
-        fprintf(data_file, "%d,%f,%f,%d,%f,%f,%f,%f,%i,%i,%i,%i,%f\n",
+        fprintf(data_file, "%d,%f,%f,%d,%f,%f,%f,%f,%i,%i,%i,%i,%f,%f,%f\n",
                 swarmAgent->born,                               // update born (prey)
                 swarmAgent->fitness,                            // swarm fitness
                 predatorAgent->fitness,                         // predator fitness
@@ -607,7 +619,9 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                 neuronsConnectedToPredatorRetina(swarmAgent),   // # neurons connected to predator part of retina (prey)
                 neuronsConnectedToPreyRetina(predatorAgent),    // # neurons connected to prey part of retina (predator)
                 numAttacks,                                     // # attacks made by predator
-                predatorFocusedVisionAngle                      // vision angle of the predator
+                predatorFocusedVisionAngle,                     // vision angle of the predator
+                average(predFocusAngles),                       // average predator focus angle (relative to predator heading)
+                variance(predFocusAngles)                       // variance in predator focus angles (relative to predator heading)
                 );
     }
     
