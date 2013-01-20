@@ -43,7 +43,7 @@ tAgent::tAgent(){
 	nrOfOffspring=0;
 	retired=false;
 	food=0;
-    visionAngle = 180.0 / 2.0;
+    focusedVisionAngle = 180.0 / 2.0;
     totalSteps=0;
 #ifdef useANN
 	ANN=new tANN;
@@ -147,13 +147,13 @@ void tAgent::inherit(tAgent *from, double mutationRate, int theTime)
 	genome.clear();
 	genome.resize(from->genome.size());
     
-    visionAngle = from->visionAngle;
+    focusedVisionAngle = from->focusedVisionAngle;
     
     if (randDouble < mutationRate)
     {
-        visionAngle += (randDouble * 10.0 - 5.0);
+        focusedVisionAngle += (randDouble * 10.0 - 5.0);
         
-        visionAngle = min(max(visionAngle, 0.0), 180.0);
+        focusedVisionAngle = min(max(focusedVisionAngle, 0.0), 180.0);
     }
     
     

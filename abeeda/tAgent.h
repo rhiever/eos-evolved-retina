@@ -52,7 +52,7 @@ public:
 	double fitness,convFitness;
 	vector<double> fitnesses;
 	int food;
-    double visionAngle;
+    double focusedVisionAngle;
 	
 	double xPos,yPos,direction;
 	double sX,sY;

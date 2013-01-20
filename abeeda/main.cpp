@@ -424,13 +424,13 @@ int main(int argc, char *argv[])
     // seed the agents
     delete swarmAgent;
     swarmAgent = new tAgent;
-    //swarmAgent->setupRandomAgent(5000);
-    swarmAgent->loadAgent((char *)"startPrey.genome");
+    swarmAgent->setupRandomAgent(5000);
+    //swarmAgent->loadAgent((char *)"startPrey.genome");
     
     delete predatorAgent;
     predatorAgent = new tAgent;
-    //predatorAgent->setupRandomAgent(5000);
-    predatorAgent->loadAgent((char *)"startPredator.genome");
+    predatorAgent->setupRandomAgent(5000);
+    //predatorAgent->loadAgent((char *)"startPredator.genome");
     
     // make mutated copies of the start genome to fill up the initial population
 	for(int i = 0; i < populationSize; ++i)
@@ -440,7 +440,7 @@ int main(int argc, char *argv[])
         
         predatorAgents[i] = new tAgent;
 		predatorAgents[i]->inherit(predatorAgent, 0.01, 1);
-        predatorAgents[i]->visionAngle = 180.0;
+        predatorAgents[i]->focusedVisionAngle = 180.0 / 2.0;
     }
     
 	SANextGen.resize(populationSize);
