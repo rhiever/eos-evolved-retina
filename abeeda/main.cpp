@@ -440,7 +440,7 @@ int main(int argc, char *argv[])
         
         predatorAgents[i] = new tAgent;
 		predatorAgents[i]->inherit(predatorAgent, 0.01, 1);
-        predatorAgents[i]->visionAngle = 180.0 / 2.0;
+        predatorAgents[i]->visionAngle = 180.0;
     }
     
 	SANextGen.resize(populationSize);
