@@ -120,6 +120,17 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     predatorAgent->setupPhenotype();
     predatorAgent->fitness = 0.0;
     
+    // determine which sensors the predator is paying attention to
+    vector<int> predatorFocusSlices;
+    
+    for (int i = 0; i < predatorAgent->hmmus.size(); ++i)
+    {
+        for (int j = 0; j < predatorAgent->hmmus[i]->ins.size(); ++j)
+        {
+            predatorFocusSlices.push_back((int)(predatorAgent->hmmus[i]->ins[j]));
+        }
+    }
+    
     for(int i = 0; i < swarmSize; ++i)
     {
         bool goodPos = true;
@@ -297,6 +308,8 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
         }
         
         // update the predator sensors
+        bool preyInRetina = false;
+        
         for(int i = 0; i < swarmSize; ++i)
         {
             if (!preyDead[i])
@@ -307,9 +320,24 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                     double angle = calcAngle(predX, predY, predA, preyX[i], preyY[i]);
                     
                     // here we have to map the angle into the sensor, btw: angle in degrees
-                    if(fabs(angle) < predatorVisionAngle) // predator has a limited vision field in front of it
+                    if (fabs(angle) < predatorVisionAngle) // predator has a limited vision field in front of it
                     {
-                        predatorAgent->states[(int)(angle / (predatorVisionAngle / ((double)predatorSensors / 2.0)) + ((double)predatorSensors / 2.0))] = 1;
+                        int slice = (int)(angle / (predatorVisionAngle / ((double)predatorSensors / 2.0)) + ((double)predatorSensors / 2.0));
+                        
+                        predatorAgent->states[slice] = 1;
+                        
+                        // track whether prey were in the predator's retina for this step
+                        if (!preyInRetina)
+                        {
+                            preyInRetina = true;
+                            
+                            ++numStepsPreyInPredatorRetina;
+                            
+                            if (std::find(predatorFocusSlices.begin(), predatorFocusSlices.end(), slice) != predatorFocusSlices.end())
+                            {
+                                ++numStepsPreyInPredatorFocus;
+                            }
+                        }
                     }
                 }
             }
@@ -573,7 +601,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     // output to data file, if provided
     if (data_file != NULL)
     {
-        fprintf(data_file, "%d,%f,%f,%d,%f,%f,%f,%f,%i,%i,%i,%i,%f\n",
+        fprintf(data_file, "%d,%f,%f,%d,%f,%f,%f,%f,%d,%d,%d,%d,%f,%d,%d\n",
                 swarmAgent->born,                               // update born (prey)
                 swarmAgent->fitness,                            // swarm fitness
                 predatorAgent->fitness,                         // predator fitness
@@ -586,7 +614,9 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                 neuronsConnectedToPredatorRetina(swarmAgent),   // # neurons connected to predator part of retina (prey)
                 neuronsConnectedToPreyRetina(predatorAgent),    // # neurons connected to prey part of retina (predator)
                 numAttacks,                                     // # attacks made by predator
-                predatorVisionAngle                             // vision angle of the predator
+                predatorVisionAngle,                            // vision angle of the predator
+                numStepsPreyInPredatorRetina,                   // number of steps prey are in the predator's field of view
+                numStepsPreyInPredatorFocus                     // number of steps prey are in a retina slice that the predator is watching
                 );
     }
     
