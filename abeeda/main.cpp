@@ -81,6 +81,7 @@ bool    make_dot_pred               = false;
 bool    make_dot_swarm              = false;
 double  safetyDist                  = 30.0 * 30.0;
 double  predatorVisionRange         = 200.0 * 200.0;
+double  initialPredatorVisionAngle  = 180.0;
 int     killDelay                   = 10;
 double  confusionMultiplier         = 1.0;
 
@@ -279,6 +280,20 @@ int main(int argc, char *argv[])
             }
         }
         
+        // -pva [int]: set initial predator vision angle (default: 180)
+        else if (strcmp(argv[i], "-pvr") == 0 && (i + 1) < argc)
+        {
+            ++i;
+            
+            initialPredatorVisionAngle = atof(argv[i]);
+            
+            if (initialPredatorVisionAngle < 1 || initialPredatorVisionAngle > 360)
+            {
+                cerr << "initial predator vision angle must be greater than 0 and less than 361." << endl;
+                exit(0);
+            }
+        }
+        
         // -kd [int]: set predator kill attempt delay (default: 10)
         else if (strcmp(argv[i], "-kd") == 0 && (i + 1) < argc)
         {
@@ -440,7 +455,7 @@ int main(int argc, char *argv[])
         
         predatorAgents[i] = new tAgent;
 		predatorAgents[i]->inherit(predatorAgent, 0.01, 1);
-        predatorAgents[i]->visionAngle = 180.0;
+        predatorAgents[i]->visionAngle = initialPredatorVisionAngle;
     }
     
 	SANextGen.resize(populationSize);

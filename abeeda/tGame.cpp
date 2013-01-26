@@ -106,7 +106,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     double predY = 0.9 * ((double)(randDouble * gridY * 2.0) - gridY);
     double predA = (int)(randDouble * 360.0);
     
-    double predatorVisionAngle = predatorAgent->visionAngle;
+    double predatorVisionAngle = predatorAgent->visionAngle / 2.0;
     int delay = 0;
     
     // string containing the information to create a video of the simulation
@@ -614,7 +614,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                 neuronsConnectedToPredatorRetina(swarmAgent),   // # neurons connected to predator part of retina (prey)
                 neuronsConnectedToPreyRetina(predatorAgent),    // # neurons connected to prey part of retina (predator)
                 numAttacks,                                     // # attacks made by predator
-                predatorVisionAngle,                            // vision angle of the predator
+                predatorAgent->visionAngle,                     // vision angle of the predator
                 numStepsPreyInPredatorRetina,                   // number of steps prey are in the predator's field of view
                 numStepsPreyInPredatorFocus                     // number of steps prey are in a retina slice that the predator is watching
                 );
