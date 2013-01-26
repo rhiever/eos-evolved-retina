@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
         }
         
         // -pva [int]: set initial predator vision angle (default: 180)
-        else if (strcmp(argv[i], "-pvr") == 0 && (i + 1) < argc)
+        else if (strcmp(argv[i], "-pva") == 0 && (i + 1) < argc)
         {
             ++i;
             
