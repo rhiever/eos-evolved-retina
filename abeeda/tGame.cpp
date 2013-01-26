@@ -71,18 +71,27 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     // LOD data variables
     double swarmFitness = 0.0;
     double predatorFitness = 0.0;
+    
     // counter of how many swarm agents are still alive
     int numAlive = swarmSize;
+    
     // number of attacks the predator has made
     int numAttacks = 0;
     
+    // number of steps prey are in the predator's field of view
+    int numStepsPreyInPredatorRetina = 0;
+    
+    // number of steps prey are in a part of the retina the predator is paying attention to
+    int numStepsPreyInPredatorFocus = 0;
+    
+    // swarm behavior metrics
     vector<double> bbSizes;
     vector<double> shortestDists;
     vector<double> swarmDensityCounts;
-    vector<int> predatorAngle, preyAngle;
     
     // swarm agent x, y, angles
     double preyX[swarmSize], preyY[swarmSize], preyA[swarmSize];
+    
     // swarm alive status
     bool preyDead[swarmSize];
     
@@ -274,16 +283,6 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
             avgWithin /= (double)numAlive;
             
             swarmDensityCounts.push_back(avgWithin);
-            
-            // store predator and prey angles
-            for(int i = 0; i < swarmSize; ++i)
-            {
-                if(!preyDead[i])
-                {
-                    predatorAngle.push_back((int)(predA/36.0));
-                    preyAngle.push_back((int)(preyA[i]/36.0));
-                }
-            }
             
         }
         /*       END OF DATA GATHERING       */

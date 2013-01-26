@@ -23,10 +23,10 @@
 #include "tHMM.h"
 //#define feedbackON
 
-tHMMU::tHMMU(){
-}
+tHMMU::tHMMU() { }
 
-tHMMU::~tHMMU(){
+tHMMU::~tHMMU()
+{
 	hmm.clear();
 	sums.clear();
 	ins.clear();
@@ -38,7 +38,9 @@ tHMMU::~tHMMU(){
 	chosenOutPos.clear();
 	chosenOutNeg.clear();
 }
-void tHMMU::setup(vector<unsigned char> &genome, int start){
+
+void tHMMU::setup(vector<unsigned char> &genome, int start)
+{
 	int i,j,k;
 	ins.clear();
 	outs.clear();
@@ -82,7 +84,8 @@ void tHMMU::setup(vector<unsigned char> &genome, int start){
 	}
 }
 
-void tHMMU::setupQuick(vector<unsigned char> &genome, int start){
+void tHMMU::setupQuick(vector<unsigned char> &genome, int start)
+{
 	int i,j,k;
 	ins.clear();
 	outs.clear();

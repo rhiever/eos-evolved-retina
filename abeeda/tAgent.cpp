@@ -43,7 +43,7 @@ tAgent::tAgent(){
 	nrOfOffspring=0;
 	retired=false;
 	food=0;
-    visionAngle = 180.0 / 2.0;
+    visionAngle = 180.0;
     totalSteps=0;
 #ifdef useANN
 	ANN=new tANN;
@@ -80,9 +80,11 @@ void tAgent::setupRandomAgent(int nucleotides)
 	int i;
 	genome.resize(nucleotides);
 	for(i=0;i<nucleotides;i++)
+    {
 		genome[i]=127;//rand()&255;
+    }
 	ampUpStartCodons();
-//	setupPhenotype();
+    //setupPhenotype();
 #ifdef useANN
 	ANN->setup();
 #endif
@@ -123,7 +125,10 @@ void tAgent::ampUpStartCodons(void)
 {
 	int i,j;
 	for(i=0;i<genome.size();i++)
+    {
 		genome[i]=rand()&255;
+    }
+    
 	for(i=0;i<4;i++)
 	{
 		j=rand()%((int)genome.size()-100);
@@ -153,9 +158,9 @@ void tAgent::inherit(tAgent *from, double mutationRate, int theTime)
     {
         visionAngle += (randDouble * 10.0 - 5.0);
         
-        visionAngle = min(max(visionAngle, 0.0), 180.0);
+        // cap vision angle between 0 and 360 degrees
+        visionAngle = min(max(visionAngle, 0.0), 360.0);
     }
-    
     
 	for (i=0;i<nucleotides;i++)
     {
@@ -250,7 +255,8 @@ void tAgent::setupMegaPhenotype(int howMany)
                 hmmu=new tHMMU;
                 hmmu->setup(genome, i);
                 //hmmu->setupQuick(genome,i);
-                for(int k=0;k<4;k++){
+                for(int k=0;k<4;k++)
+                {
                     hmmu->ins[k]+=(j*maxNodes);
                     hmmu->outs[k]+=(j*maxNodes);
                 }
@@ -258,11 +264,12 @@ void tAgent::setupMegaPhenotype(int howMany)
             }
         }
         /*
-         if((genome[i]==43)&&(genome[(i+1)%genome.size()]==(255-43))){
-         hmmu=new tHMMU;
-         //hmmu->setup(genome,i);
-         hmmu->setupQuick(genome,i);
-         hmmus.push_back(hmmu);
+         if((genome[i]==43)&&(genome[(i+1)%genome.size()]==(255-43)))
+         {
+             hmmu=new tHMMU;
+             //hmmu->setup(genome,i);
+             hmmu->setupQuick(genome,i);
+             hmmus.push_back(hmmu);
          }
          */
 	}
