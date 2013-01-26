@@ -24,8 +24,7 @@
 #include <float.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#define cPI 3.14159265
+#include <algorithm>
 
 // simulation-specific constants
 #define preyVisionRange         100.0 * 100.0

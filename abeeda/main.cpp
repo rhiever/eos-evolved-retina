@@ -85,6 +85,7 @@ double  initialPredatorVisionAngle  = 180.0;
 int     killDelay                   = 10;
 double  confusionMultiplier         = 1.0;
 bool    evolveRetina                = false;
+bool    scalePredatorRetinaRange    = false;
 
 int main(int argc, char *argv[])
 {
@@ -316,11 +317,30 @@ int main(int argc, char *argv[])
         {
             evolveRetina = true;
         }
+        
+        // -spr: set flag to scale the predator's retina range based on its retina angle (default: false)
+        else if (strcmp(argv[i], "-spr") == 0)
+        {
+            scalePredatorRetinaRange = true;
+        }
     }
     
     // initial population setup
     swarmAgents.resize(populationSize);
     predatorAgents.resize(populationSize);
+    
+    
+    // scale the predator's retina range dependent on its retina angle
+    if (scalePredatorRetinaRange)
+    {
+        // wider retina angle = shorter retina range and vice versa
+        
+        // calculate normal retina area w/ default retina range (200) and retina angle (180)
+        double totalRetinaArea = (180.0 / 360.0) * cPI * 200.0 * 200.0;
+        
+        // calculate new predator retina range based off of its retina angle
+        predatorVisionRange = totalRetinaArea / ((initialPredatorVisionAngle / 360.0) * cPI);
+    }
     
     if (display_only || display_directory || make_interval_video || make_LOD_video)
     {
