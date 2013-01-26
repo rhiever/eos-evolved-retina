@@ -1,7 +1,7 @@
 /*
  * tGame.h
  *
- * This file is part of the aBeeDa Swarm Evolution project.
+ * This file is part of the Evolution of Swarming project.
  *
  * Copyright 2012 Randal S. Olson, Arend Hintze.
  * 
