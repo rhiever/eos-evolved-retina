@@ -158,15 +158,15 @@ void tAgent::inherit(tAgent *from, double mutationRate, int theTime)
     {
         visionAngle += (randDouble * 10.0 - 5.0);
         
-        // cap vision angle between 0 and 360 degrees
-        visionAngle = min(max(visionAngle, 0.0), 360.0);
+        // cap vision angle between 1 and 360 degrees
+        visionAngle = min(max(visionAngle, 1.0), 360.0);
     }
     
 	for (i=0;i<nucleotides;i++)
     {
 		if (randDouble < mutationRate)
         {
-			genome[i]=rand()&255;
+			genome[i]=rand() & 255;
         }
 		else
         {
