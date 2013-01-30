@@ -475,7 +475,7 @@ int main(int argc, char *argv[])
     predatorAgent->loadAgent((char *)"startPredator.genome");
     
     // make mutated copies of the start genome to fill up the initial population
-	for(int i = 0; i < populationSize; ++i)
+	for (int i = 0; i < populationSize; ++i)
     {
 		swarmAgents[i] = new tAgent;
 		swarmAgents[i]->inherit(swarmAgent, 0.01, 1, evolveRetina);
@@ -498,7 +498,7 @@ int main(int argc, char *argv[])
 	for (int update = 1; update <= totalGenerations; ++update)
     {
         // reset fitnesses
-		for(int i = 0; i < populationSize; ++i)
+		for (int i = 0; i < populationSize; ++i)
         {
 			swarmAgents[i]->fitness = 0.0;
 			//swarmAgents[i]->fitnesses.clear();
@@ -513,7 +513,7 @@ int main(int argc, char *argv[])
         double swarmAvgFitness = 0.0;
         double predatorAvgFitness = 0.0;
         
-		for(int i = 0; i < populationSize; ++i)
+		for (int i = 0; i < populationSize; ++i)
         {
             game->executeGame(swarmAgents[i], predatorAgents[i], NULL, false, safetyDist, predatorVisionRange, killDelay, confusionMultiplier);
             
@@ -532,13 +532,13 @@ int main(int argc, char *argv[])
             //swarmAgents[i]->fitnesses.push_back(swarmAgents[i]->fitness);
             //predatorAgents[i]->fitnesses.push_back(predatorAgents[i]->fitness);
             
-            if(swarmAgents[i]->fitness > swarmMaxFitness)
+            if (swarmAgents[i]->fitness > swarmMaxFitness)
             {
                 swarmMaxFitness = swarmAgents[i]->fitness;
                 bestSwarmAgent = swarmAgents[i];
             }
             
-            if(predatorAgents[i]->fitness > predatorMaxFitness)
+            if (predatorAgents[i]->fitness > predatorMaxFitness)
             {
                 predatorMaxFitness = predatorAgents[i]->fitness;
                 bestPredatorAgent = predatorAgents[i];
@@ -569,7 +569,7 @@ int main(int argc, char *argv[])
         }
         
         
-		for(int i = 0; i < populationSize; ++i)
+		for (int i = 0; i < populationSize; ++i)
 		{
             // construct swarm agent population for the next generation
 			tAgent *offspring = new tAgent;
@@ -600,12 +600,12 @@ int main(int argc, char *argv[])
         random_shuffle(SANextGen.begin(), SANextGen.end());
         random_shuffle(PANextGen.begin(), PANextGen.end());
         
-		for(int i = 0; i < populationSize; ++i)
+		for (int i = 0; i < populationSize; ++i)
         {
             // retire and replace the swarm agents from the previous generation
 			swarmAgents[i]->retire();
 			swarmAgents[i]->nrPointingAtMe--;
-			if(swarmAgents[i]->nrPointingAtMe == 0)
+			if (swarmAgents[i]->nrPointingAtMe == 0)
             {
 				delete swarmAgents[i];
             }
@@ -614,7 +614,7 @@ int main(int argc, char *argv[])
             // retire and replace the predator agents from the previous generation
             predatorAgents[i]->retire();
 			predatorAgents[i]->nrPointingAtMe--;
-			if(predatorAgents[i]->nrPointingAtMe == 0)
+			if (predatorAgents[i]->nrPointingAtMe == 0)
             {
 				delete predatorAgents[i];
             }
