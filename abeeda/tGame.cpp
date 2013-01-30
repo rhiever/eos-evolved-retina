@@ -308,6 +308,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
         
         // update the predator sensors
         bool preyInRetina = false;
+        bool preyinFocus = false;
         
         for(int i = 0; i < swarmSize; ++i)
         {
@@ -329,11 +330,14 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                         if (!preyInRetina)
                         {
                             preyInRetina = true;
-                            
                             ++numStepsPreyInPredatorRetina;
-                            
+                        }
+                        
+                        if (!preyinFocus)
+                        {
                             if (std::find(predatorFocusSlices.begin(), predatorFocusSlices.end(), slice) != predatorFocusSlices.end())
                             {
+                                preyinFocus = true;
                                 ++numStepsPreyInPredatorFocus;
                             }
                         }

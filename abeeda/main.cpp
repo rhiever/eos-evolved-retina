@@ -466,8 +466,8 @@ int main(int argc, char *argv[])
     // seed the agents
     delete swarmAgent;
     swarmAgent = new tAgent;
-    //swarmAgent->setupRandomAgent(5000);
-    swarmAgent->loadAgent((char *)"startPrey.genome");
+    swarmAgent->setupRandomAgent(5000);
+    //swarmAgent->loadAgent((char *)"startPrey.genome");
     
     delete predatorAgent;
     predatorAgent = new tAgent;
