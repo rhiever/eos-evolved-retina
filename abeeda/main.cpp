@@ -466,8 +466,8 @@ int main(int argc, char *argv[])
     // seed the agents
     delete swarmAgent;
     swarmAgent = new tAgent;
-    swarmAgent->setupRandomAgent(5000);
-    //swarmAgent->loadAgent((char *)"startPrey.genome");
+    //swarmAgent->setupRandomAgent(5000);
+    swarmAgent->loadAgent((char *)"startPrey.genome");
     
     delete predatorAgent;
     predatorAgent = new tAgent;
@@ -478,7 +478,7 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < populationSize; ++i)
     {
 		swarmAgents[i] = new tAgent;
-		swarmAgents[i]->inherit(swarmAgent, 0.01, 1, evolveRetina);
+		swarmAgents[i]->inherit(swarmAgent, 0.01, 1, false);
         
         predatorAgents[i] = new tAgent;
 		predatorAgents[i]->inherit(predatorAgent, 0.01, 1, evolveRetina);
@@ -519,7 +519,7 @@ int main(int argc, char *argv[])
             
             // store the swarm agent's corresponding predator agent
             swarmAgents[i]->predator = new tAgent;
-            swarmAgents[i]->predator->inherit(predatorAgents[i], 0.0, predatorAgents[i]->born, evolveRetina);
+            swarmAgents[i]->predator->inherit(predatorAgents[i], 0.0, predatorAgents[i]->born, false);
             
             // cleanup for memory management
             predatorAgents[i]->nrPointingAtMe--;
@@ -548,7 +548,7 @@ int main(int argc, char *argv[])
         swarmAvgFitness /= (double)populationSize;
         predatorAvgFitness /= (double)populationSize;
 		
-		cout << "generation " << update << ": swarm [" << (int)swarmAvgFitness << " : " << (int)swarmMaxFitness << "] :: predator [" << (int)predatorAvgFitness << " : " << (int)predatorMaxFitness << "]" << endl;
+		cout << "generation " << update << ": swarm [" << (int)swarmAvgFitness << " : " << (int)swarmMaxFitness << "] :: predator [" << (int)predatorAvgFitness << " : " << (int)predatorMaxFitness << "] " << bestPredatorAgent->visionAngle << endl;
         
         // display video of simulation
         if (make_interval_video)
@@ -580,7 +580,7 @@ int main(int argc, char *argv[])
                 j = rand() % populationSize;
             } while((j == i) || (randDouble > (swarmAgents[j]->fitness / swarmMaxFitness)));
             
-			offspring->inherit(swarmAgents[j], perSiteMutationRate, update, evolveRetina);
+			offspring->inherit(swarmAgents[j], perSiteMutationRate, update, false);
 			SANextGen[i] = offspring;
             
             // construct predator agent population for the next generation

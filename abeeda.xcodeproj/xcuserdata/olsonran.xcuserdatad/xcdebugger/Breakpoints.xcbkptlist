@@ -75,5 +75,44 @@
          startingLineNumber = "5"
          endingLineNumber = "5">
       </FileBreakpoint>
+      <FileBreakpoint
+         shouldBeEnabled = "No"
+         ignoreCount = "0"
+         continueAfterRunningActions = "No"
+         filePath = "aBeeDa/tGame.cpp"
+         timestampString = "381904494.428332"
+         startingColumnNumber = "9223372036854775807"
+         endingColumnNumber = "9223372036854775807"
+         startingLineNumber = "675"
+         endingLineNumber = "675"
+         landmarkName = "tGame::calcSwarmCenter(double preyX[], double preyY[], bool preyDead[], double&amp; preyCenterX, double&amp; preyCenterY)"
+         landmarkType = "5">
+      </FileBreakpoint>
+      <FileBreakpoint
+         shouldBeEnabled = "No"
+         ignoreCount = "0"
+         continueAfterRunningActions = "No"
+         filePath = "aBeeDa/tGame.cpp"
+         timestampString = "381904712.574479"
+         startingColumnNumber = "9223372036854775807"
+         endingColumnNumber = "9223372036854775807"
+         startingLineNumber = "660"
+         endingLineNumber = "660"
+         landmarkName = "tGame::calcAngle(double fromX, double fromY, double fromAngle, double toX, double toY)"
+         landmarkType = "5">
+      </FileBreakpoint>
+      <FileBreakpoint
+         shouldBeEnabled = "No"
+         ignoreCount = "0"
+         continueAfterRunningActions = "No"
+         filePath = "aBeeDa/tGame.cpp"
+         timestampString = "381904714.260289"
+         startingColumnNumber = "9223372036854775807"
+         endingColumnNumber = "9223372036854775807"
+         startingLineNumber = "656"
+         endingLineNumber = "656"
+         landmarkName = "tGame::calcAngle(double fromX, double fromY, double fromAngle, double toX, double toY)"
+         landmarkType = "5">
+      </FileBreakpoint>
    </FileBreakpoints>
 </Bucket>

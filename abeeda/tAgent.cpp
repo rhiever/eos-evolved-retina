@@ -154,9 +154,9 @@ void tAgent::inherit(tAgent *from, double mutationRate, int theTime, bool evolve
     
     visionAngle = from->visionAngle;
     
-    if (evolveRetina && randDouble < mutationRate)
+    if (evolveRetina && randDouble < 0.05)
     {
-        visionAngle += (randDouble * 10.0 - 5.0);
+        visionAngle += (randDouble * 50.0 - 25.0);
         
         // cap vision angle between 1 and 360 degrees
         visionAngle = min(max(visionAngle, 1.0), 360.0);
