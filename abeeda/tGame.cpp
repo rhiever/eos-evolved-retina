@@ -135,9 +135,13 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     {
         bool goodPos = true;
         
+        // try new position max of 10 times. prevents the run from getting stuck here trying to place the agents.
+        int numTries = 0;
+        
         do
         {
             goodPos = true;
+            ++numTries;
             
             preyX[i] = 0.5 * ((double)(randDouble * gridX * 2.0) - gridX);
             preyY[i] = 0.5 * ((double)(randDouble * gridY * 2.0) - gridY);
@@ -151,7 +155,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                 }
             }
             
-        } while (!goodPos);
+        } while (!goodPos && numTries < 10);
         
         preyA[i] = (int)(randDouble * 360.0);
         preyDead[i] = false;
