@@ -478,10 +478,10 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < populationSize; ++i)
     {
 		swarmAgents[i] = new tAgent;
-		swarmAgents[i]->inherit(swarmAgent, 0.01, 1, false);
+		swarmAgents[i]->inherit(swarmAgent, 0.01, 0, false);
         
         predatorAgents[i] = new tAgent;
-		predatorAgents[i]->inherit(predatorAgent, 0.01, 1, evolveRetina);
+		predatorAgents[i]->inherit(predatorAgent, 0.01, 0, false);//evolveRetina);
         predatorAgents[i]->visionAngle = initialPredatorVisionAngle;
     }
     
@@ -592,7 +592,24 @@ int main(int argc, char *argv[])
                 j = rand() % populationSize;
             } while((j == i) || (randDouble > (predatorAgents[j]->fitness / predatorMaxFitness)));
             
-			offspring->inherit(predatorAgents[j], perSiteMutationRate, update, evolveRetina);
+            // do not evolve predator retina for first 1,000 gens
+            if (update <= 1000)
+            {
+                offspring->inherit(predatorAgents[j], perSiteMutationRate, update, false);
+            }
+            
+            // gens 1000-1500: allow pred retina to evolve
+            else if (update <= 1500)
+            {
+                offspring->inherit(predatorAgents[j], perSiteMutationRate, update, evolveRetina);
+            }
+            
+            // gens 1500-2500: fix pred retina at 180 degrees
+            else
+            {
+                offspring->inherit(predatorAgents[j], perSiteMutationRate, update, false);
+                offspring->visionAngle = initialPredatorVisionAngle;
+            }
 			PANextGen[i] = offspring;
 		}
         
