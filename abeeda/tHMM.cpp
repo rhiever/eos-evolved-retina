@@ -73,12 +73,18 @@ void tHMMU::setup(vector<unsigned char> &genome, int start)
 	k=k+16;
 	hmm.resize(1<<_yDim);
 	sums.resize(1<<_yDim);
-	for (i=0;i<(1<<_yDim);i++){
+	for (i=0;i<(1<<_yDim);i++)
+    {
 		hmm[i].resize(1<<_xDim);
-		for (j=0;j<(1<<_xDim);j++){
+        
+		for (j=0;j<(1<<_xDim);j++)
+        {
 //			hmm[i][j]=(genome[(k+j+((1<<yDim)*i))%genome.size()]&1)*255;
 			hmm[i][j]=genome[(k+j+((1<<_xDim)*i))%genome.size()];
-			if (hmm[i][j]==0) hmm[i][j]=1;
+			if (hmm[i][j]==0)
+            {
+                hmm[i][j]=1;
+            }
 			sums[i]+=hmm[i][j];
 		}
 	}
@@ -118,10 +124,13 @@ void tHMMU::setupQuick(vector<unsigned char> &genome, int start)
 	k=k+16;
 	hmm.resize(1<<_yDim);
 	sums.resize(1<<_yDim);
-	for (i=0;i<(1<<_yDim);i++){
+	for (i=0;i<(1<<_yDim);i++)
+    {
 		hmm[i].resize(1<<_xDim);
 		for (j=0;j<(1<<_xDim);j++)
+        {
 			hmm[i][j]=0;
+        }
 		hmm[i][genome[(k+j+((1<<_xDim)*i))%genome.size()]&((1<<_xDim)-1)]=255;
 		sums[i]=255;
 	}
