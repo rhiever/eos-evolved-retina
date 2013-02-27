@@ -24,25 +24,23 @@
 #include <float.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <algorithm>
 
 // simulation-specific constants
 #define preyVisionRange         100.0 * 100.0
 #define preyVisionAngle         180.0 / 2.0
+#define predatorVisionRange     200.0 * 200.0
 #define preySensors             12
 #define predatorSensors         12
 #define totalStepsInSimulation  2000
 #define gridX                   256.0
 #define gridY                   256.0
-#define gridXAcross             2.0 * gridX
-#define gridYAcross             2.0 * gridY
-#define collisionDist           5.0 * 5.0
-#define boundaryDist            gridX - sqrt(collisionDist)
+#define killDist                5.0 * 5.0
+#define boundaryDist            250.0
 
 // precalculated lookup tables for the game
 double cosLookup[360];
 double sinLookup[360];
-double atan2Lookup[2000][2000];
+//double atan2Lookup[800][800];
 
 tGame::tGame()
 {
@@ -53,44 +51,35 @@ tGame::tGame()
         sinLookup[i] = sin((double)i * (cPI / 180.0));
     }
     
-    for (int i = 0; i < 2000; ++i)
+    /*for (int i = 0; i < 800; ++i)
     {
-        for (int j = 0; j < 2000; ++j)
+        for (int j = 0; j < 800; ++j)
         {
-            atan2Lookup[i][j] = atan2(i - 1000, j - 1000) * 180.0 / cPI;
+            atan2Lookup[i][j] = atan2(i - 400, j - 400) * 180.0 / cPI;
         }
-    }
+    }*/
 }
 
 tGame::~tGame() { }
 
 // runs the simulation for the given agent(s)
-string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_file, bool report, double safetyDist, double predatorVisionRange, int killDelay, double confusionMultiplier)
+string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_file, bool report, double safetyDist, double predatorVisionAngle, int killDelay, double confusionMultiplier)
 {
     // LOD data variables
     double swarmFitness = 0.0;
     double predatorFitness = 0.0;
-    
     // counter of how many swarm agents are still alive
     int numAlive = swarmSize;
-    
     // number of attacks the predator has made
     int numAttacks = 0;
     
-    // number of steps prey are in the predator's field of view
-    int numStepsPreyInPredatorRetina = 0;
-    
-    // number of steps prey are in a part of the retina the predator is paying attention to
-    int numStepsPreyInPredatorFocus = 0;
-    
-    // swarm behavior metrics
     vector<double> bbSizes;
     vector<double> shortestDists;
     vector<double> swarmDensityCounts;
+    vector<int> predatorAngle, preyAngle;
     
     // swarm agent x, y, angles
     double preyX[swarmSize], preyY[swarmSize], preyA[swarmSize];
-    
     // swarm alive status
     bool preyDead[swarmSize];
     
@@ -101,11 +90,10 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     double preyDists[swarmSize][swarmSize];
     
     // predator X, Y, and angle
-    double predX = 0.9 * ((double)(randDouble * gridX * 2.0) - gridX);
-    double predY = 0.9 * ((double)(randDouble * gridY * 2.0) - gridY);
+    double predX = (double)(randDouble * gridX * 2.0) - gridX;
+    double predY = (double)(randDouble * gridY * 2.0) - gridY;
     double predA = (int)(randDouble * 360.0);
     
-    double predatorVisionAngle = predatorAgent->visionAngle / 2.0;
     int delay = 0;
     
     // string containing the information to create a video of the simulation
@@ -119,32 +107,18 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     predatorAgent->setupPhenotype();
     predatorAgent->fitness = 0.0;
     
-    // determine which sensors the predator is paying attention to
-    vector<int> predatorFocusSlices;
-    
-    for (int i = 0; i < predatorAgent->hmmus.size(); ++i)
+    for(int i = 0; i < swarmSize; ++i)
     {
-        for (int j = 0; j < predatorAgent->hmmus[i]->ins.size(); ++j)
-        {
-            predatorFocusSlices.push_back((int)(predatorAgent->hmmus[i]->ins[j]));
-        }
-    }
-    
-    // set initial prey positions randomly
-    for (int i = 0; i < swarmSize; ++i)
-    {
-        bool goodPos = true;
-        
-        // try new position max of 10 times. prevents the run from getting stuck here trying to place the agents.
         int numTries = 0;
+        bool goodPos = true;
         
         do
         {
-            goodPos = true;
             ++numTries;
+            goodPos = true;
             
-            preyX[i] = 0.5 * ((double)(randDouble * gridX * 2.0) - gridX);
-            preyY[i] = 0.5 * ((double)(randDouble * gridY * 2.0) - gridY);
+            preyX[i] = 0.6 * ((double)(randDouble * gridX * 2.0) - gridX);
+            preyY[i] = 0.6 * ((double)(randDouble * gridY * 2.0) - gridY);
             
             for (int j = 0; j < i; ++j)
             {
@@ -166,11 +140,11 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     
     /*       BEGINNING OF SIMULATION LOOP       */
     
-    for (int step = 0; step < totalStepsInSimulation; ++step)
+    for(int step = 0; step < totalStepsInSimulation; ++step)
     {
         
         /*       CREATE THE REPORT STRING FOR THE VIDEO       */
-        if (report)
+        if(report)
         {
             // report X, Y, angle of predator
             char text[1000];
@@ -187,7 +161,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
             reportString.append(text2);*/
             
             // report X, Y, angle of all prey
-            for (int i = 0; i <swarmSize; ++i)
+            for(int i = 0; i <swarmSize; ++i)
             {
                 if (!preyDead[i])
                 {
@@ -205,7 +179,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
         
         
         /*       SAVE DATA FOR THE LOD FILE       */
-        if (data_file != NULL)
+        if(data_file != NULL)
         {
             // calculate bounding box size for this update
             // lu = Left Uppermost point
@@ -213,7 +187,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
             double luX = DBL_MAX, luY = DBL_MAX;
             double rbX = -DBL_MAX, rbY = -DBL_MAX;
             
-            for (int i = 0; i < swarmSize; ++i)
+            for(int i = 0; i < swarmSize; ++i)
             {
                 if (!preyDead[i])
                 {
@@ -246,14 +220,14 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
             // calculate mean of shortest distance to other swarm agents
             double meanShortestDist = 0.0;
             
-            for (int i = 0; i < swarmSize; ++i)
+            for(int i = 0; i < swarmSize; ++i)
             {
                 if (!preyDead[i])
                 {
                     // find closest agent to agent i
                     double shortestDist = DBL_MAX;
                     
-                    for (int j = 0; j < swarmSize; ++j)
+                    for(int j = 0; j < swarmSize; ++j)
                     {
                         if (!preyDead[j] && i != j)
                         {
@@ -278,11 +252,11 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
             // calculate swarm density count
             double avgWithin = 0.0;
             
-            for (int i = 0; i < swarmSize; ++i)
+            for(int i = 0; i < swarmSize; ++i)
             {
                 if (!preyDead[i])
                 {
-                    for (int j = 0; j < swarmSize; ++j)
+                    for(int j = 0; j < swarmSize; ++j)
                     {
                         if (!preyDead[j] && i != j)
                         {
@@ -299,6 +273,16 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
             
             swarmDensityCounts.push_back(avgWithin);
             
+            // store predator and prey angles
+            for(int i = 0; i < swarmSize; ++i)
+            {
+                if(!preyDead[i])
+                {
+                    predatorAngle.push_back((int)(predA/36.0));
+                    preyAngle.push_back((int)(preyA[i]/36.0));
+                }
+            }
+            
         }
         /*       END OF DATA GATHERING       */
         
@@ -306,46 +290,25 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
         /*       UPDATE PREDATOR       */
         
         // clear the predator sensors
-        for (int i = 0; i < predatorSensors; ++i)
+        for(int i = 0; i < predatorSensors; ++i)
         {
             predatorAgent->states[i] = 0;
         }
         
         // update the predator sensors
-        bool preyInRetina = false;
-        bool preyinFocus = false;
-        
-        for (int i = 0; i < swarmSize; ++i)
+        for(int i = 0; i < swarmSize; ++i)
         {
             if (!preyDead[i])
             {
                 // don't bother if an agent is too far
-                if (predDists[i] < predatorVisionRange)
+                if(predDists[i] < predatorVisionRange)
                 {
                     double angle = calcAngle(predX, predY, predA, preyX[i], preyY[i]);
                     
                     // here we have to map the angle into the sensor, btw: angle in degrees
-                    if (fabs(angle) < predatorVisionAngle) // predator has a limited vision field in front of it
+                    if(fabs(angle) < predatorVisionAngle) // predator has a limited vision field in front of it
                     {
-                        int slice = (int)(angle / (predatorVisionAngle / ((double)predatorSensors / 2.0)) + ((double)predatorSensors / 2.0));
-                        
-                        predatorAgent->states[slice] = 1;
-                        
-                        // track whether prey were in the predator's retina for this step
-                        if (!preyInRetina)
-                        {
-                            preyInRetina = true;
-                            ++numStepsPreyInPredatorRetina;
-                        }
-                        
-                        if (!preyinFocus)
-                        {
-                            if (std::find(predatorFocusSlices.begin(), predatorFocusSlices.end(), slice) != predatorFocusSlices.end())
-                            {
-                                preyinFocus = true;
-                                ++numStepsPreyInPredatorFocus;
-                            }
-                        }
+                        predatorAgent->states[(int)(angle / (predatorVisionAngle / ((double)predatorSensors / 2.0)) + ((double)predatorSensors / 2.0))] = 1;
                     }
                 }
             }
@@ -416,13 +379,12 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
             {
                 bool killed = false;
                 
-                for (int i = 0; !killed && i < swarmSize; ++i)
+                for(int i = 0; !killed && i < swarmSize; ++i)
                 {
                     // victim prey must be within kill range
-                    if (!preyDead[i] && (predDists[i] < collisionDist) && fabs(calcAngle(predX, predY, predA, preyX[i], preyY[i])) < predatorVisionAngle)
+                    if (!preyDead[i] && (predDists[i] < killDist) && fabs(calcAngle(predX, predY, predA, preyX[i], preyY[i])) < predatorVisionAngle)
                     {
                         ++numAttacks;
-                        
                         int nearbyCount = 0;
                         
                         for (int j = 0; j < swarmSize; ++j)
@@ -434,8 +396,10 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                             }
                         }
                         
-                        // predator confusion effect
+                        // confusion effect
                         double killChance = confusionMultiplier / (double)nearbyCount;
+                        
+                        //max( (confusionMultiplier / (double)nearbyCount), 0.2);
                         
                         if (randDouble < killChance)
                         {
@@ -459,26 +423,26 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
         
         
         /*       UPDATE SWARM       */
-        for (int i = 0; i < swarmSize; ++i)
+        for(int i = 0; i < swarmSize; ++i)
         {
             if (!preyDead[i])
             {
                 //clear the sensors of agent i
-                for (int j = 0; j < preySensors * 2; ++j)
+                for(int j = 0; j < preySensors * 2; ++j)
                 {
                     swarmAgent->states[j + (i * maxNodes)] = 0;
                 }
                 
                 // indicate the presence of other visible agents in agent i's retina
-                for (int j = 0; j < swarmSize; ++j)
+                for(int j = 0; j < swarmSize; ++j)
                 {
                     //ignore i==j because an agent can't see itself
-                    if (i != j && !preyDead[j])
+                    if(i != j && !preyDead[j])
                     {
                         double d = preyDists[i][j];
                         
                         //don't bother if an agent is too far
-                        if (d < preyVisionRange)
+                        if(d < preyVisionRange)
                         {
                             // ignore if agent i isn't even facing agent j (won't be within retina)
                             if (calcDistanceSquared(preyX[i] + cosLookup[(int)preyA[i]],
@@ -488,7 +452,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                                 double angle = calcAngle(preyX[i], preyY[i], preyA[i], preyX[j], preyY[j]);
                                 
                                 //here we have to map the angle into the sensor, btw: angle in degrees
-                                if (fabs(angle) < preyVisionAngle) // prey has a limited vision field infront of it
+                                if(fabs(angle) < preyVisionAngle) // prey has a limited vision field infront of it
                                 {
                                     swarmAgent->states[(int)(angle / (preyVisionAngle / ((double)preySensors / 2.0)) + ((double)preySensors / 2.0)) + (i * maxNodes)] = 1;
                                 }
@@ -506,7 +470,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                     
                     //here we have to map the angle into the sensor, btw: angle in degree
                     // prey has a limited vision field infront of it
-                    if (fabs(angle) < preyVisionAngle)
+                    if(fabs(angle) < preyVisionAngle)
                     {
                         swarmAgent->states[preySensors + (int)(angle / (preyVisionAngle / ((double)preySensors / 2.0)) + ((double)preySensors / 2.0)) + (i * maxNodes)] = 1;
                     }
@@ -518,7 +482,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
         swarmAgent->updateStates();
         
         // activate each swarm agent's brain, determine its action for this update, and update its position and angle
-        for (int i = 0; i < swarmSize; ++i)
+        for(int i = 0; i < swarmSize; ++i)
         {
             if (!preyDead[i])
             {
@@ -596,12 +560,12 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     swarmAgent->fitness = swarmFitness;
     predatorAgent->fitness = predatorFitness;
     
-    if (swarmAgent->fitness <= 0.0)
+    if(swarmAgent->fitness <= 0.0)
     {
         swarmAgent->fitness = 1.0;
     }
     
-    if (predatorAgent->fitness <= 0.0)
+    if(predatorAgent->fitness <= 0.0)
     {
         predatorAgent->fitness = 1.0;
     }
@@ -609,7 +573,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     // output to data file, if provided
     if (data_file != NULL)
     {
-        fprintf(data_file, "%d,%f,%f,%d,%f,%f,%f,%f,%d,%d,%d,%d,%f,%d,%d\n",
+        fprintf(data_file, "%d,%f,%f,%d,%f,%f,%f,%f,%i,%i,%i,%f,%i\n",
                 swarmAgent->born,                               // update born (prey)
                 swarmAgent->fitness,                            // swarm fitness
                 predatorAgent->fitness,                         // predator fitness
@@ -621,10 +585,8 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                 neuronsConnectedToPreyRetina(swarmAgent),       // # neurons connected to prey part of retina (prey)
                 neuronsConnectedToPredatorRetina(swarmAgent),   // # neurons connected to predator part of retina (prey)
                 neuronsConnectedToPreyRetina(predatorAgent),    // # neurons connected to prey part of retina (predator)
-                numAttacks,                                     // # attacks made by predator
-                predatorAgent->visionAngle,                     // vision angle of the predator
-                numStepsPreyInPredatorRetina,                   // number of steps prey are in the predator's field of view
-                numStepsPreyInPredatorFocus                     // number of steps prey are in a retina slice that the predator is watching
+                mutualInformation(predatorAngle, preyAngle),    // mutual Information between prey flight angle and predator flight angle
+                numAttacks
                 );
     }
     
@@ -633,7 +595,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
 
 
 // calculates the distance^2 between two points
-inline double tGame::calcDistanceSquared(double fromX, double fromY, double toX, double toY)
+double tGame::calcDistanceSquared(double fromX, double fromY, double toX, double toY)
 {
     double diffX = fromX - toX;
     double diffY = fromY - toY;
@@ -642,7 +604,7 @@ inline double tGame::calcDistanceSquared(double fromX, double fromY, double toX,
 }
 
 // calculates the angle between two agents
-inline double tGame::calcAngle(double fromX, double fromY, double fromAngle, double toX, double toY)
+double tGame::calcAngle(double fromX, double fromY, double fromAngle, double toX, double toY)
 {
     double Ux = 0.0, Uy = 0.0, Vx = 0.0, Vy = 0.0;
     
@@ -655,14 +617,8 @@ inline double tGame::calcAngle(double fromX, double fromY, double fromAngle, dou
     int firstTerm = (int)((Ux * Vy) - (Uy * Vx));
     int secondTerm = (int)((Ux * Vx) + (Uy * Vy));
     
-    try
-    {
-        return atan2Lookup[firstTerm + 1000][secondTerm + 1000];
-    }
-    catch (...)
-    {
-        return atan2(firstTerm, secondTerm) * 180.0 / cPI;
-    }
+    return atan2(firstTerm, secondTerm) * 180.0 / cPI;
+    //return atan2Lookup[firstTerm + 400][secondTerm + 400];
 }
 
 // calculates the center of the swarm and stores it in (cX, cY)
@@ -672,7 +628,7 @@ void tGame::calcSwarmCenter(double preyX[], double preyY[], bool preyDead[], dou
     preyCenterX = 0.0;
     preyCenterY = 0.0;
     
-    for (int i = 0; i < swarmSize; ++i)
+    for(int i = 0; i < swarmSize; ++i)
     {
         if (!preyDead[i])
         {
@@ -701,7 +657,7 @@ void tGame::recalcPredDistTable(double preyX[], double preyY[], bool preyDead[],
 }
 
 // recalculates the predator and prey distance lookup tables
-inline void tGame::recalcPredAndPreyDistTable(double preyX[], double preyY[], bool preyDead[],
+void tGame::recalcPredAndPreyDistTable(double preyX[], double preyY[], bool preyDead[],
                                        double predX, double predY,
                                        double predDists[swarmSize], double preyDists[swarmSize][swarmSize])
 {
@@ -786,24 +742,24 @@ double tGame::mutualInformation(vector<int> A,vector<int>B)
 	int i;
 	double c=1.0/(double)A.size();
 	double I=0.0;
-	for (i=0;i<A.size();i++){
+	for(i=0;i<A.size();i++){
 		nrA.insert(A[i]);
 		nrB.insert(B[i]);
 		pX[A[i]]=0.0;
 		pY[B[i]]=0.0;
 	}
-	for (aI=nrA.begin();aI!=nrA.end();aI++)
-		for (bI=nrB.begin();bI!=nrB.end();bI++){
+	for(aI=nrA.begin();aI!=nrA.end();aI++)
+		for(bI=nrB.begin();bI!=nrB.end();bI++){
 			pXY[*aI][*bI]=0.0;
 		}
-	for (i=0;i<A.size();i++){
+	for(i=0;i<A.size();i++){
 		pXY[A[i]][B[i]]+=c;
 		pX[A[i]]+=c;
 		pY[B[i]]+=c;
 	}
-	for (aI=nrA.begin();aI!=nrA.end();aI++)
-		for (bI=nrB.begin();bI!=nrB.end();bI++)
-			if ((pX[*aI]!=0.0)&&(pY[*bI]!=0.0)&&(pXY[*aI][*bI]!=0.0))
+	for(aI=nrA.begin();aI!=nrA.end();aI++)
+		for(bI=nrB.begin();bI!=nrB.end();bI++)
+			if((pX[*aI]!=0.0)&&(pY[*bI]!=0.0)&&(pXY[*aI][*bI]!=0.0))
 				I+=pXY[*aI][*bI]*log2(pXY[*aI][*bI]/(pX[*aI]*pY[*bI]));
 	return I;
 	
@@ -815,7 +771,7 @@ double tGame::entropy(vector<int> list){
 	int i;
 	double H=0.0;
 	double c=1.0/(double)list.size();
-	for (i=0;i<list.size();i++)
+	for(i=0;i<list.size();i++)
 		p[list[i]]+=c;
 	for (pI=p.begin();pI!=p.end();pI++) {
         H+=p[pI->first]*log2(p[pI->first]);	
@@ -831,24 +787,24 @@ double tGame::ei(vector<int> A,vector<int> B,int theMask){
 	int i;
 	double c=1.0/(double)A.size();
 	double I=0.0;
-	for (i=0;i<A.size();i++){
+	for(i=0;i<A.size();i++){
 		nrA.insert(A[i]&theMask);
 		nrB.insert(B[i]&theMask);
 		pX[A[i]&theMask]=0.0;
 		pY[B[i]&theMask]=0.0;
 	}
-	for (aI=nrA.begin();aI!=nrA.end();aI++)
-		for (bI=nrB.begin();bI!=nrB.end();bI++){
+	for(aI=nrA.begin();aI!=nrA.end();aI++)
+		for(bI=nrB.begin();bI!=nrB.end();bI++){
 			pXY[*aI][*bI]=0.0;
 		}
-	for (i=0;i<A.size();i++){
+	for(i=0;i<A.size();i++){
 		pXY[A[i]&theMask][B[i]&theMask]+=c;
 		pX[A[i]&theMask]+=c;
 		pY[B[i]&theMask]+=c;
 	}
-	for (aI=nrA.begin();aI!=nrA.end();aI++)
-		for (bI=nrB.begin();bI!=nrB.end();bI++)
-			if ((pX[*aI]!=0.0)&&(pY[*bI]!=0.0)&&(pXY[*aI][*bI]!=0.0))
+	for(aI=nrA.begin();aI!=nrA.end();aI++)
+		for(bI=nrB.begin();bI!=nrB.end();bI++)
+			if((pX[*aI]!=0.0)&&(pY[*bI]!=0.0)&&(pXY[*aI][*bI]!=0.0))
 				I+=pXY[*aI][*bI]*log2(pXY[*aI][*bI]/(pY[*bI]));
 	return -I;
 }
@@ -863,7 +819,7 @@ double tGame::computeAtomicPhi(vector<int>A,int states){
 	T1.erase(T1.begin());
 	EIsystem=ei(T0,T1,(1<<states)-1);
 	P=0.0;
-	for (i=0;i<states;i++){
+	for(i=0;i<states;i++){
 		double EIP=ei(T0,T1,1<<i);
         //		cout<<EIP<<endl;
 		P+=EIP;
@@ -875,13 +831,13 @@ double tGame::computeAtomicPhi(vector<int>A,int states){
 double tGame::computeR(vector<vector<int> > table,int howFarBack){
 	double Iwh,Iws,Ish,Hh,Hs,Hw,Hhws,delta,R;
 	int i;
-	for (i=0;i<howFarBack;i++){
+	for(i=0;i<howFarBack;i++){
 		table[0].erase(table[0].begin());
 		table[1].erase(table[1].begin());
 		table[2].erase(table[2].begin()+(table[2].size()-1));
 	}
 	table[4].clear();
-	for (i=0;i<table[0].size();i++){
+	for(i=0;i<table[0].size();i++){
 		table[4].push_back((table[0][i]<<14)+(table[1][i]<<10)+table[2][i]);
 	}
 	Iwh=mutualInformation(table[0],table[2]);
@@ -906,7 +862,7 @@ double tGame::computeOldR(vector<vector<int> > table){
 double tGame::predictiveI(vector<int>A){
 	vector<int> S,I;
 	S.clear(); I.clear();
-	for (int i=0;i<A.size();i++){
+	for(int i=0;i<A.size();i++){
 		S.push_back((A[i]>>12)&15);
 		I.push_back(A[i]&3);
 	}
@@ -916,7 +872,7 @@ double tGame::predictiveI(vector<int>A){
 double tGame::nonPredictiveI(vector<int>A){
 	vector<int> S,I;
 	S.clear(); I.clear();
-	for (int i=0;i<A.size();i++){
+	for(int i=0;i<A.size();i++){
 		S.push_back((A[i]>>12)&15);
 		I.push_back(A[i]&3);
 	}
@@ -926,7 +882,7 @@ double tGame::nonPredictiveI(vector<int>A){
 double tGame::predictNextInput(vector<int>A){
 	vector<int> S,I;
 	S.clear(); I.clear();
-	for (int i=0;i<A.size();i++){
+	for(int i=0;i<A.size();i++){
 		S.push_back((A[i]>>12)&15);
 		I.push_back(A[i]&3);
 	}
@@ -944,9 +900,9 @@ int tGame::neuronsConnectedToPreyRetina(tAgent *agent){
     int i,j,c=0;
     A->genome=agent->genome;
     A->setupPhenotype();
-    for (i=0;i<A->hmmus.size();i++)
-        for (j=0;j<A->hmmus[i]->ins.size();j++)
-            if (A->hmmus[i]->ins[j]<preySensors)
+    for(i=0;i<A->hmmus.size();i++)
+        for(j=0;j<A->hmmus[i]->ins.size();j++)
+            if(A->hmmus[i]->ins[j]<preySensors)
                 c++;
     delete A;
     return c;
@@ -957,9 +913,9 @@ int tGame::neuronsConnectedToPredatorRetina(tAgent* agent){
     int i,j,c=0;
     A->genome=agent->genome;
     A->setupPhenotype();
-    for (i=0;i<A->hmmus.size();i++)
-        for (j=0;j<A->hmmus[i]->ins.size();j++)
-            if ((A->hmmus[i]->ins[j]<(preySensors*2))&&(A->hmmus[i]->ins[j]>=preySensors))
+    for(i=0;i<A->hmmus.size();i++)
+        for(j=0;j<A->hmmus[i]->ins.size();j++)
+            if((A->hmmus[i]->ins[j]<(preySensors*2))&&(A->hmmus[i]->ins[j]>=preySensors))
                 c++;
     delete A;
     return c;
@@ -971,7 +927,7 @@ void tOctuplet::loadOctuplet(FILE *f){
     int i,IN;
     data.clear();
     data.resize(8);
-    for (i=0;i<8;i++){
+    for(i=0;i<8;i++){
         fscanf(f,"  %i",&IN);
         data[i]=IN;
     }
@@ -983,25 +939,25 @@ void tExperiment::loadExperiment(char *filename){
     int i,j,k;
     fscanf(f,"%i:",&j);
     dropSequences.resize(j);
-    for (i=0;i<dropSequences.size();i++)
+    for(i=0;i<dropSequences.size();i++)
         dropSequences[i].loadOctuplet(f);
     fscanf(f,"%i:",&j);
     sizeSequences.resize(j);
-    for (i=0;i<sizeSequences.size();i++)
+    for(i=0;i<sizeSequences.size();i++)
         sizeSequences[i].loadOctuplet(f);
     fscanf(f,"%i:",&j);
     selfSequences.resize(j);
-    for (i=0;i<selfSequences.size();i++)
+    for(i=0;i<selfSequences.size();i++)
         selfSequences[i].loadOctuplet(f);
     shouldHit.resize(drops());
-    for (i=0;i<shouldHit.size();i++){
+    for(i=0;i<shouldHit.size();i++){
         shouldHit[i].resize(sizes());
-        for (j=0;j<shouldHit[i].size();j++){
+        for(j=0;j<shouldHit[i].size();j++){
             shouldHit[i][j].resize(selves());
-            for (k=0;k<shouldHit[i][j].size();k++){
+            for(k=0;k<shouldHit[i][j].size();k++){
                 int l;
                 fscanf(f,"%i\n",&l);
-                if (l==1)
+                if(l==1)
                     shouldHit[i][j][k]=true;
                 else
                     shouldHit[i][j][k]=false;
@@ -1014,30 +970,30 @@ void tExperiment::loadExperiment(char *filename){
 void tExperiment::showExperimentProtokoll(void){
     int i,j,k;
     printf("drop directions: %i\n",drops());
-    for (i=0;i<drops();i++){
+    for(i=0;i<drops();i++){
         printf("%i:",i);
-        for (j=0;j<8;j++)
+        for(j=0;j<8;j++)
             printf("    %i",dropSequences[i].data[j]);
         printf("\n");
     }
     printf("drop sizes: %i\n",sizes());
-    for (i=0;i<sizes();i++){
+    for(i=0;i<sizes();i++){
         printf("%i:",i);
-        for (j=0;j<8;j++)
+        for(j=0;j<8;j++)
             printf("    %i",sizeSequences[i].data[j]);
         printf("\n");
     }
     printf("self sizes: %i\n",selves());
-    for (i=0;i<selves();i++){
+    for(i=0;i<selves();i++){
         printf("%i:",i);
-        for (j=0;j<8;j++)
+        for(j=0;j<8;j++)
             printf("    %i",selfSequences[i].data[j]);
         printf("\n");
     }
     printf("should hit\n%i means true\nD  B   S   catch\n",(int)true);
-    for (i=0;i<shouldHit.size();i++)
-        for (j=0;j<shouldHit[i].size();j++)
-            for (k=0;k<shouldHit[i][j].size();k++)
+    for(i=0;i<shouldHit.size();i++)
+        for(j=0;j<shouldHit[i].size();j++)
+            for(k=0;k<shouldHit[i][j].size();k++)
                 printf("%i  %i  %i  %i\n",i,j,k,(int)shouldHit[i][j][k]);
 }
 

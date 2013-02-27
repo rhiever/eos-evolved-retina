@@ -80,12 +80,9 @@ bool    make_logic_table            = false;
 bool    make_dot_pred               = false;
 bool    make_dot_swarm              = false;
 double  safetyDist                  = 30.0 * 30.0;
-double  predatorVisionRange         = 200.0 * 200.0;
-double  initialPredatorVisionAngle  = 180.0;
+double  predatorVisionAngle         = 180.0 / 2.0;
 int     killDelay                   = 10;
 double  confusionMultiplier         = 1.0;
-bool    evolveRetina                = false;
-bool    scalePredatorRetinaRange    = false;
 
 int main(int argc, char *argv[])
 {
@@ -97,6 +94,8 @@ int main(int argc, char *argv[])
     int displayDirectoryArgvIndex = 0;
     
     // initial object setup
+    swarmAgents.resize(populationSize);
+    predatorAgents.resize(populationSize);
 	game = new tGame;
 	swarmAgent = new tAgent;
     predatorAgent = new tAgent;
@@ -164,20 +163,6 @@ int main(int argc, char *argv[])
             if (totalGenerations < 3)
             {
                 cerr << "minimum number of generations permitted is 3." << endl;
-                exit(0);
-            }
-        }
-        
-        // -p [int]: set GA population size
-        else if (strcmp(argv[i], "-p") == 0 && (i + 1) < argc)
-        {
-            ++i;
-            
-            populationSize = atoi(argv[i]);
-            
-            if (populationSize < 1)
-            {
-                cerr << "minimum GA population size permitted is 1." << endl;
                 exit(0);
             }
         }
@@ -265,35 +250,13 @@ int main(int argc, char *argv[])
             safetyDist *= safetyDist;
         }
         
-        // -pvr [int]: set predator vision range (default: 200)
-        else if (strcmp(argv[i], "-pvr") == 0 && (i + 1) < argc)
-        {
-            ++i;
-            
-            predatorVisionRange = atof(argv[i]);
-            
-            // simulation works in distance squared
-            predatorVisionRange *= predatorVisionRange;
-            
-            if (predatorVisionRange < 1)
-            {
-                cerr << "predator vision range must be greater than 0." << endl;
-                exit(0);
-            }
-        }
-        
-        // -pva [int]: set initial predator vision angle (default: 180)
+        // -pva [int]: set predator vision angle (default: 180)
         else if (strcmp(argv[i], "-pva") == 0 && (i + 1) < argc)
         {
             ++i;
             
-            initialPredatorVisionAngle = atof(argv[i]);
-            
-            if (initialPredatorVisionAngle < 1 || initialPredatorVisionAngle > 360)
-            {
-                cerr << "initial predator vision angle must be greater than 0 and less than 361." << endl;
-                exit(0);
-            }
+            // halve angle since it's split evenly in front of the predator (required for simulation)
+            predatorVisionAngle = atof(argv[i]) / 2.0;
         }
         
         // -kd [int]: set predator kill attempt delay (default: 10)
@@ -304,42 +267,13 @@ int main(int argc, char *argv[])
             killDelay = atoi(argv[i]);
         }
         
-        // -cm [float]: set confusion effect multiplier (default: 1.0)
+        // -cm [float]: set predator confusion multiplier (default: 1.0)
         else if (strcmp(argv[i], "-cm") == 0 && (i + 1) < argc)
         {
             ++i;
             
-            confusionMultiplier = atof(argv[i]);
+            confusionMultiplier = atoi(argv[i]);
         }
-        
-        // -er: set flag to evolve the agents' retina (default: false)
-        else if (strcmp(argv[i], "-er") == 0)
-        {
-            evolveRetina = true;
-        }
-        
-        // -spr: set flag to scale the predator's retina range based on its retina angle (default: false)
-        else if (strcmp(argv[i], "-spr") == 0)
-        {
-            scalePredatorRetinaRange = true;
-        }
-    }
-    
-    // initial population setup
-    swarmAgents.resize(populationSize);
-    predatorAgents.resize(populationSize);
-    
-    
-    // scale the predator's retina range dependent on its retina angle
-    if (scalePredatorRetinaRange)
-    {
-        // wider retina angle = shorter retina range and vice versa
-        
-        // calculate normal retina area w/ default retina range (200) and retina angle (180)
-        double totalRetinaArea = (180.0 / 360.0) * cPI * 200.0 * 200.0;
-        
-        // calculate new predator retina range based off of its retina angle
-        predatorVisionRange = totalRetinaArea / ((initialPredatorVisionAngle / 360.0) * cPI);
     }
     
     if (display_only || display_directory || make_interval_video || make_LOD_video)
@@ -467,7 +401,7 @@ int main(int argc, char *argv[])
     delete swarmAgent;
     swarmAgent = new tAgent;
     swarmAgent->setupRandomAgent(5000);
-    //swarmAgent->loadAgent((char *)"startPrey.genome");
+    //swarmAgent->loadAgent("startSwarm.genome");
     
     delete predatorAgent;
     predatorAgent = new tAgent;
@@ -475,14 +409,13 @@ int main(int argc, char *argv[])
     predatorAgent->loadAgent((char *)"startPredator.genome");
     
     // make mutated copies of the start genome to fill up the initial population
-	for (int i = 0; i < populationSize; ++i)
+	for(int i = 0; i < populationSize; ++i)
     {
 		swarmAgents[i] = new tAgent;
-		swarmAgents[i]->inherit(swarmAgent, 0.01, 0, false);
+		swarmAgents[i]->inherit(swarmAgent, 0.01, 1);
         
         predatorAgents[i] = new tAgent;
-		predatorAgents[i]->inherit(predatorAgent, 0.01, 0, false);//evolveRetina);
-        predatorAgents[i]->visionAngle = initialPredatorVisionAngle;
+		predatorAgents[i]->inherit(predatorAgent, 0.01, 1);
     }
     
 	SANextGen.resize(populationSize);
@@ -498,7 +431,7 @@ int main(int argc, char *argv[])
 	for (int update = 1; update <= totalGenerations; ++update)
     {
         // reset fitnesses
-		for (int i = 0; i < populationSize; ++i)
+		for(int i = 0; i < populationSize; ++i)
         {
 			swarmAgents[i]->fitness = 0.0;
 			//swarmAgents[i]->fitnesses.clear();
@@ -513,13 +446,13 @@ int main(int argc, char *argv[])
         double swarmAvgFitness = 0.0;
         double predatorAvgFitness = 0.0;
         
-		for (int i = 0; i < populationSize; ++i)
+		for(int i = 0; i < populationSize; ++i)
         {
-            game->executeGame(swarmAgents[i], predatorAgents[i], NULL, false, safetyDist, predatorVisionRange, killDelay, confusionMultiplier);
+            game->executeGame(swarmAgents[i], predatorAgents[i], NULL, false, safetyDist, predatorVisionAngle, killDelay, confusionMultiplier);
             
             // store the swarm agent's corresponding predator agent
             swarmAgents[i]->predator = new tAgent;
-            swarmAgents[i]->predator->inherit(predatorAgents[i], 0.0, predatorAgents[i]->born, false);
+            swarmAgents[i]->predator->inherit(predatorAgents[i], 0.0, predatorAgents[i]->born);
             
             // cleanup for memory management
             predatorAgents[i]->nrPointingAtMe--;
@@ -532,13 +465,13 @@ int main(int argc, char *argv[])
             //swarmAgents[i]->fitnesses.push_back(swarmAgents[i]->fitness);
             //predatorAgents[i]->fitnesses.push_back(predatorAgents[i]->fitness);
             
-            if (swarmAgents[i]->fitness > swarmMaxFitness)
+            if(swarmAgents[i]->fitness > swarmMaxFitness)
             {
                 swarmMaxFitness = swarmAgents[i]->fitness;
                 bestSwarmAgent = swarmAgents[i];
             }
             
-            if (predatorAgents[i]->fitness > predatorMaxFitness)
+            if(predatorAgents[i]->fitness > predatorMaxFitness)
             {
                 predatorMaxFitness = predatorAgents[i]->fitness;
                 bestPredatorAgent = predatorAgents[i];
@@ -548,7 +481,7 @@ int main(int argc, char *argv[])
         swarmAvgFitness /= (double)populationSize;
         predatorAvgFitness /= (double)populationSize;
 		
-		cout << "generation " << update << ": swarm [" << (int)swarmAvgFitness << " : " << (int)swarmMaxFitness << "] :: predator [" << (int)predatorAvgFitness << " : " << (int)predatorMaxFitness << "] " << bestPredatorAgent->visionAngle << endl;
+		cout << "generation " << update << ": swarm [" << (int)swarmAvgFitness << " : " << (int)swarmMaxFitness << "] :: predator [" << (int)predatorAvgFitness << " : " << (int)predatorMaxFitness << "]" << endl;
         
         // display video of simulation
         if (make_interval_video)
@@ -557,7 +490,7 @@ int main(int argc, char *argv[])
             
             if (update % make_video_frequency == 0 || finalGeneration)
             {
-                string bestString = game->executeGame(bestSwarmAgent, bestPredatorAgent, NULL, true, safetyDist, predatorVisionRange, killDelay, confusionMultiplier);
+                string bestString = game->executeGame(bestSwarmAgent, bestPredatorAgent, NULL, true, safetyDist, predatorVisionAngle, killDelay, confusionMultiplier);
                 
                 if (finalGeneration)
                 {
@@ -569,7 +502,7 @@ int main(int argc, char *argv[])
         }
         
         
-		for (int i = 0; i < populationSize; ++i)
+		for(int i = 0; i < populationSize; ++i)
 		{
             // construct swarm agent population for the next generation
 			tAgent *offspring = new tAgent;
@@ -580,7 +513,7 @@ int main(int argc, char *argv[])
                 j = rand() % populationSize;
             } while((j == i) || (randDouble > (swarmAgents[j]->fitness / swarmMaxFitness)));
             
-			offspring->inherit(swarmAgents[j], perSiteMutationRate, update, false);
+			offspring->inherit(swarmAgents[j], perSiteMutationRate, update);
 			SANextGen[i] = offspring;
             
             // construct predator agent population for the next generation
@@ -592,24 +525,7 @@ int main(int argc, char *argv[])
                 j = rand() % populationSize;
             } while((j == i) || (randDouble > (predatorAgents[j]->fitness / predatorMaxFitness)));
             
-            // do not evolve predator retina for first 1,000 gens
-            if (update <= 1000)
-            {
-                offspring->inherit(predatorAgents[j], perSiteMutationRate, update, false);
-            }
-            
-            // gens 1000-1500: allow pred retina to evolve
-            else if (update <= 1500)
-            {
-                offspring->inherit(predatorAgents[j], perSiteMutationRate, update, evolveRetina);
-            }
-            
-            // gens 1500-2500: fix pred retina at 180 degrees
-            else
-            {
-                offspring->inherit(predatorAgents[j], perSiteMutationRate, update, false);
-                offspring->visionAngle = initialPredatorVisionAngle;
-            }
+			offspring->inherit(predatorAgents[j], perSiteMutationRate, update);
 			PANextGen[i] = offspring;
 		}
         
@@ -617,12 +533,12 @@ int main(int argc, char *argv[])
         random_shuffle(SANextGen.begin(), SANextGen.end());
         random_shuffle(PANextGen.begin(), PANextGen.end());
         
-		for (int i = 0; i < populationSize; ++i)
+		for(int i = 0; i < populationSize; ++i)
         {
             // retire and replace the swarm agents from the previous generation
 			swarmAgents[i]->retire();
 			swarmAgents[i]->nrPointingAtMe--;
-			if (swarmAgents[i]->nrPointingAtMe == 0)
+			if(swarmAgents[i]->nrPointingAtMe == 0)
             {
 				delete swarmAgents[i];
             }
@@ -631,7 +547,7 @@ int main(int argc, char *argv[])
             // retire and replace the predator agents from the previous generation
             predatorAgents[i]->retire();
 			predatorAgents[i]->nrPointingAtMe--;
-			if (predatorAgents[i]->nrPointingAtMe == 0)
+			if(predatorAgents[i]->nrPointingAtMe == 0)
             {
 				delete predatorAgents[i];
             }
@@ -678,7 +594,7 @@ int main(int argc, char *argv[])
     
     FILE *LOD = fopen(LODFileName.c_str(), "w");
 
-    fprintf(LOD, "generation,prey_fitness,predator_fitness,num_alive_end,avg_bb_size,var_bb_size,avg_shortest_dist,swarm_density_count,prey_neurons_connected_prey_retina,prey_neurons_connected_predator_retina,predator_neurons_connected_prey_retina,num_attacks,pred_vision_angle,num_steps_prey_visible,num_steps_prey_focused\n");
+    fprintf(LOD, "generation,prey_fitness,predator_fitness,num_alive_end,avg_bb_size,var_bb_size,avg_shortest_dist,swarm_density_count,prey_neurons_connected_prey_retina,prey_neurons_connected_predator_retina,predator_neurons_connected_prey_retina,mutual_info,num_attacks\n");
     
     cout << "analyzing ancestor list" << endl;
     
@@ -691,7 +607,7 @@ int main(int argc, char *argv[])
         else
         {
             // collect quantitative stats
-            game->executeGame(*it, (*it)->predator, LOD, false, safetyDist, predatorVisionRange, killDelay, confusionMultiplier);
+            game->executeGame(*it, (*it)->predator, LOD, false, safetyDist, predatorVisionAngle, killDelay, confusionMultiplier);
             
             // make video
             if (make_LOD_video)
@@ -720,7 +636,7 @@ string findBestRun(tAgent *swarmAgent, tAgent *predatorAgent)
     
     for (int rep = 0; rep < 100; ++rep)
     {
-        reportString = game->executeGame(swarmAgent, predatorAgent, NULL, true, safetyDist, predatorVisionRange, killDelay, confusionMultiplier);
+        reportString = game->executeGame(swarmAgent, predatorAgent, NULL, true, safetyDist, predatorVisionAngle, killDelay, confusionMultiplier);
         
         if (swarmAgent->fitness > bestFitness)
         {

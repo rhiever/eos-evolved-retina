@@ -71,7 +71,7 @@ public:
 	void loadAgentWithTrailer(char* filename);
 	void setupPhenotype(void);
     void setupMegaPhenotype(int howMany);
-	void inherit(tAgent *from,double mutationRate,int theTime, bool evolveRetina);
+	void inherit(tAgent *from,double mutationRate,int theTime);
 	unsigned char * getStatesPointer(void);
 	void updateStates(void);
 	void resetBrain(void);

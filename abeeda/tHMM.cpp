@@ -23,10 +23,10 @@
 #include "tHMM.h"
 //#define feedbackON
 
-tHMMU::tHMMU() { }
+tHMMU::tHMMU(){
+}
 
-tHMMU::~tHMMU()
-{
+tHMMU::~tHMMU(){
 	hmm.clear();
 	sums.clear();
 	ins.clear();
@@ -38,9 +38,7 @@ tHMMU::~tHMMU()
 	chosenOutPos.clear();
 	chosenOutNeg.clear();
 }
-
-void tHMMU::setup(vector<unsigned char> &genome, int start)
-{
+void tHMMU::setup(vector<unsigned char> &genome, int start){
 	int i,j,k;
 	ins.clear();
 	outs.clear();
@@ -57,13 +55,13 @@ void tHMMU::setup(vector<unsigned char> &genome, int start)
 	outs.resize(_xDim);
 	posLevelOfFB.resize(nrPos);
 	negLevelOfFB.resize(nrNeg);
-	for (i=0;i<_yDim;i++)
+	for(i=0;i<_yDim;i++)
 		ins[i]=genome[(k+i)%genome.size()]&(maxNodes-1);
-	for (i=0;i<_xDim;i++)
+	for(i=0;i<_xDim;i++)
 		outs[i]=genome[(k+4+i)%genome.size()]&(maxNodes-1);
-	for (i=0;i<nrPos;i++)
+	for(i=0;i<nrPos;i++)
 		posLevelOfFB[i]=(int)(1+genome[(k+8+i)%genome.size()]);
-	for (i=0;i<nrNeg;i++)
+	for(i=0;i<nrNeg;i++)
 		negLevelOfFB[i]=(int)(1+genome[(k+12+i)%genome.size()]);
 	chosenInPos.clear();
 	chosenInNeg.clear();
@@ -73,25 +71,18 @@ void tHMMU::setup(vector<unsigned char> &genome, int start)
 	k=k+16;
 	hmm.resize(1<<_yDim);
 	sums.resize(1<<_yDim);
-	for (i=0;i<(1<<_yDim);i++)
-    {
+	for(i=0;i<(1<<_yDim);i++){
 		hmm[i].resize(1<<_xDim);
-        
-		for (j=0;j<(1<<_xDim);j++)
-        {
+		for(j=0;j<(1<<_xDim);j++){
 //			hmm[i][j]=(genome[(k+j+((1<<yDim)*i))%genome.size()]&1)*255;
 			hmm[i][j]=genome[(k+j+((1<<_xDim)*i))%genome.size()];
-			if (hmm[i][j]==0)
-            {
-                hmm[i][j]=1;
-            }
+			if(hmm[i][j]==0) hmm[i][j]=1;
 			sums[i]+=hmm[i][j];
 		}
 	}
 }
 
-void tHMMU::setupQuick(vector<unsigned char> &genome, int start)
-{
+void tHMMU::setupQuick(vector<unsigned char> &genome, int start){
 	int i,j,k;
 	ins.clear();
 	outs.clear();
@@ -108,13 +99,13 @@ void tHMMU::setupQuick(vector<unsigned char> &genome, int start)
 	outs.resize(_xDim);
 	posLevelOfFB.resize(nrPos);
 	negLevelOfFB.resize(nrNeg);
-	for (i=0;i<_yDim;i++)
+	for(i=0;i<_yDim;i++)
 		ins[i]=genome[(k+i)%genome.size()]&(maxNodes-1);
-	for (i=0;i<_xDim;i++)
+	for(i=0;i<_xDim;i++)
 		outs[i]=genome[(k+4+i)%genome.size()]&(maxNodes-1);
-	for (i=0;i<nrPos;i++)
+	for(i=0;i<nrPos;i++)
 		posLevelOfFB[i]=(int)(1+genome[(k+8+i)%genome.size()]);
-	for (i=0;i<nrNeg;i++)
+	for(i=0;i<nrNeg;i++)
 		negLevelOfFB[i]=(int)(1+genome[(k+12+i)%genome.size()]);
 	chosenInPos.clear();
 	chosenInNeg.clear();
@@ -124,13 +115,10 @@ void tHMMU::setupQuick(vector<unsigned char> &genome, int start)
 	k=k+16;
 	hmm.resize(1<<_yDim);
 	sums.resize(1<<_yDim);
-	for (i=0;i<(1<<_yDim);i++)
-    {
+	for(i=0;i<(1<<_yDim);i++){
 		hmm[i].resize(1<<_xDim);
-		for (j=0;j<(1<<_xDim);j++)
-        {
+		for(j=0;j<(1<<_xDim);j++)
 			hmm[i][j]=0;
-        }
 		hmm[i][genome[(k+j+((1<<_xDim)*i))%genome.size()]&((1<<_xDim)-1)]=255;
 		sums[i]=255;
 	}
@@ -144,24 +132,24 @@ void tHMMU::update(unsigned char *states, unsigned char *newStates)
 #ifdef feedbackON
     unsigned char mod;
     
-	if ((nrPos!=0)&&(states[posFBNode]==1))
+	if((nrPos!=0)&&(states[posFBNode]==1))
     {
-		for (i=0;i<chosenInPos.size();i++)
+		for(i=0;i<chosenInPos.size();i++)
         {
 			mod=(unsigned char)(rand()%(int)posLevelOfFB[i]);
-			if ((hmm[chosenInPos[i]][chosenOutPos[i]]+mod)<255)
+			if((hmm[chosenInPos[i]][chosenOutPos[i]]+mod)<255)
             {
 				hmm[chosenInPos[i]][chosenOutPos[i]]+=mod;
 				sums[chosenInPos[i]]+=mod;
 			}
 		}
 	}
-	if ((nrNeg!=0)&&(states[negFBNode]==1))
+	if((nrNeg!=0)&&(states[negFBNode]==1))
     {
-		for (i=0;i<chosenInNeg.size();i++)
+		for(i=0;i<chosenInNeg.size();i++)
         {
 			mod=(unsigned char)(rand()%(int)negLevelOfFB[i]);
-			if ((hmm[chosenInNeg[i]][chosenOutNeg[i]]-mod)>0)
+			if((hmm[chosenInNeg[i]][chosenOutNeg[i]]-mod)>0)
             {
 				hmm[chosenInNeg[i]][chosenOutNeg[i]]-=mod;
 				sums[chosenInNeg[i]]-=mod;
@@ -170,7 +158,7 @@ void tHMMU::update(unsigned char *states, unsigned char *newStates)
 	}
 #endif
     
-	for (vector<int>::iterator it = ins.begin(), end = ins.end(); it != end; ++it)
+	for(vector<int>::iterator it = ins.begin(), end = ins.end(); it != end; ++it)
     {
 		I=(I<<1)+((states[*it])&1);
     }
@@ -184,7 +172,7 @@ void tHMMU::update(unsigned char *states, unsigned char *newStates)
 		++j;
 	}
     
-	for (i = 0; i < outs.size(); ++i)
+	for(i = 0; i < outs.size(); ++i)
     {
 		newStates[outs[i]] |= (j >> i) & 1;
     }
@@ -215,31 +203,31 @@ void tHMMU::update(unsigned char *states, unsigned char *newStates)
 void tHMMU::show(void){
 	int i,j;
 	cout<<"INS: ";
-	for (i=0;i<ins.size();i++)
+	for(i=0;i<ins.size();i++)
 		cout<<(int)ins[i]<<" ";
 	cout<<endl;
 	cout<<"OUTS: ";
-	for (i=0;i<outs.size();i++)
+	for(i=0;i<outs.size();i++)
 		cout<<(int)outs[i]<<" ";
 	cout<<endl;
-	for (i=0;i<hmm.size();i++){
-		for (j=0;j<hmm[i].size();j++)
+	for(i=0;i<hmm.size();i++){
+		for(j=0;j<hmm[i].size();j++)
 			cout<<" "<<(double)hmm[i][j]/sums[i];
 		cout<<endl;
 	}
 	cout<<endl;
 	cout<<"posFB: "<<(int)posFBNode<<" negFB: "<<(int)negFBNode<<endl;
 	cout<<"posQue:"<<endl;
-	for (i=0;i<posLevelOfFB.size();i++)
+	for(i=0;i<posLevelOfFB.size();i++)
 		cout<<(int)posLevelOfFB[i]<<" ";
 	cout<<endl;
 	cout<<"negQue:"<<endl;
-	for (i=0;i<negLevelOfFB.size();i++)
+	for(i=0;i<negLevelOfFB.size();i++)
 		cout<<(int)negLevelOfFB[i]<<" ";
 	cout<<endl;
 /*
-	for (i=0;i<hmm.size();i++){
-		for (j=0;j<hmm[i].size();j++)
+	for(i=0;i<hmm.size();i++){
+		for(j=0;j<hmm[i].size();j++)
 			cout<<(int)hmm[i][j]<<" ";
 		cout<<endl;
 	}

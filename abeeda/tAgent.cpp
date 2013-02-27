@@ -30,7 +30,7 @@ tAgent::tAgent(){
 	nrPointingAtMe=1;
 	ancestor = NULL;
     predator = NULL;
-	for (int i=0;i<maxNodes;i++)
+	for(int i=0;i<maxNodes;i++)
     {
 		states[i]=0;
 		newStates[i]=0;
@@ -43,8 +43,8 @@ tAgent::tAgent(){
 	nrOfOffspring=0;
 	retired=false;
 	food=0;
-    visionAngle = 180.0;
     totalSteps=0;
+    visionAngle = 180.0 / 2.0;
 #ifdef useANN
 	ANN=new tANN;
 #endif
@@ -79,12 +79,10 @@ void tAgent::setupRandomAgent(int nucleotides)
 {
 	int i;
 	genome.resize(nucleotides);
-	for (i=0;i<nucleotides;i++)
-    {
+	for(i=0;i<nucleotides;i++)
 		genome[i]=127;//rand()&255;
-    }
 	ampUpStartCodons();
-    //setupPhenotype();
+//	setupPhenotype();
 #ifdef useANN
 	ANN->setup();
 #endif
@@ -124,22 +122,19 @@ void tAgent::loadAgentWithTrailer(char* filename)
 void tAgent::ampUpStartCodons(void)
 {
 	int i,j;
-	for (i=0;i<genome.size();i++)
-    {
+	for(i=0;i<genome.size();i++)
 		genome[i]=rand()&255;
-    }
-    
-	for (i=0;i<4;i++)
+	for(i=0;i<4;i++)
 	{
 		j=rand()%((int)genome.size()-100);
 		genome[j]=42;
 		genome[j+1]=(255-42);
-		for (int k=2;k<20;k++)
+		for(int k=2;k<20;k++)
 			genome[j+k]=rand()&255;
 	}
 }
 
-void tAgent::inherit(tAgent *from, double mutationRate, int theTime, bool evolveRetina)
+void tAgent::inherit(tAgent *from, double mutationRate, int theTime)
 {
 	int nucleotides=(int)from->genome.size();
 	int i,s,o,w;
@@ -151,22 +146,13 @@ void tAgent::inherit(tAgent *from, double mutationRate, int theTime, bool evolve
 	from->nrOfOffspring++;
 	genome.clear();
 	genome.resize(from->genome.size());
-    
     visionAngle = from->visionAngle;
     
-    if (evolveRetina && randDouble < 0.05)
-    {
-        visionAngle += (randDouble * 50.0 - 25.0);
-        
-        // cap vision angle between 1 and 360 degrees
-        visionAngle = min(max(visionAngle, 1.0), 360.0);
-    }
-    
-	for (i=0;i<nucleotides;i++)
+	for(i=0;i<nucleotides;i++)
     {
 		if (randDouble < mutationRate)
         {
-			genome[i]=rand() & 255;
+			genome[i]=rand()&255;
         }
 		else
         {
@@ -185,7 +171,7 @@ void tAgent::inherit(tAgent *from, double mutationRate, int theTime, bool evolve
             buffer.clear();
             buffer.insert(buffer.begin(),genome.begin()+s,genome.begin()+s+w);
             genome.insert(genome.begin()+o,buffer.begin(),buffer.end());
-        } 
+        }
         if ( (randDouble < 0.02) && (genome.size() > 1000) )
         {
             //deletion
@@ -206,17 +192,17 @@ void tAgent::setupPhenotype(void)
 {
 	int i;
 	tHMMU *hmmu;
-	if (hmmus.size()!=0)
+	if(hmmus.size()!=0)
     {
-		for (i=0;i<hmmus.size();i++)
+		for(i=0;i<hmmus.size();i++)
         {
 			delete hmmus[i];
         }
     }
 	hmmus.clear();
-	for (i=0;i<genome.size();i++)
+	for(i=0;i<genome.size();i++)
     {
-		if ((genome[i]==42)&&(genome[(i+1)%genome.size()]==(255-42)))
+		if((genome[i]==42)&&(genome[(i+1)%genome.size()]==(255-42)))
         {
 			hmmu=new tHMMU;
 			//hmmu->setupQuick(genome,i);
@@ -224,7 +210,7 @@ void tAgent::setupPhenotype(void)
 			hmmus.push_back(hmmu);
 		}
         /*
-		if ((genome[i]==43)&&(genome[(i+1)%genome.size()]==(255-43))){
+		if((genome[i]==43)&&(genome[(i+1)%genome.size()]==(255-43))){
 			hmmu=new tHMMU;
 			//hmmu->setup(genome,i);
 			hmmu->setupQuick(genome,i);
@@ -238,25 +224,24 @@ void tAgent::setupMegaPhenotype(int howMany)
 	int i,j;
 	tHMMU *hmmu;
     
-	if (hmmus.size() > 0)
+	if(hmmus.size() > 0)
     {
-		for (vector<tHMMU*>::iterator it = hmmus.begin(), end = hmmus.end(); it != end; ++it)
+		for(vector<tHMMU*>::iterator it = hmmus.begin(), end = hmmus.end(); it != end; ++it)
         {
 			delete *it;
         }
     }
 	hmmus.clear();
-	for (i=0;i<genome.size();i++)
+	for(i=0;i<genome.size();i++)
     {
-		if ((genome[i]==42)&&(genome[(i+1)%genome.size()]==(255-42)))
+		if((genome[i]==42)&&(genome[(i+1)%genome.size()]==(255-42)))
         {
-            for (j=0;j<howMany;j++)
+            for(j=0;j<howMany;j++)
             {
                 hmmu=new tHMMU;
                 hmmu->setup(genome, i);
                 //hmmu->setupQuick(genome,i);
-                for (int k=0;k<4;k++)
-                {
+                for(int k=0;k<4;k++){
                     hmmu->ins[k]+=(j*maxNodes);
                     hmmu->outs[k]+=(j*maxNodes);
                 }
@@ -264,12 +249,11 @@ void tAgent::setupMegaPhenotype(int howMany)
             }
         }
         /*
-         if ((genome[i]==43)&&(genome[(i+1)%genome.size()]==(255-43)))
-         {
-             hmmu=new tHMMU;
-             //hmmu->setup(genome,i);
-             hmmu->setupQuick(genome,i);
-             hmmus.push_back(hmmu);
+         if((genome[i]==43)&&(genome[(i+1)%genome.size()]==(255-43))){
+         hmmu=new tHMMU;
+         //hmmu->setup(genome,i);
+         hmmu->setupQuick(genome,i);
+         hmmus.push_back(hmmu);
          }
          */
 	}
@@ -289,7 +273,7 @@ unsigned char * tAgent::getStatesPointer(void)
 
 void tAgent::resetBrain(void)
 {
-	for (int i=0;i<maxNodes*swarmSize;i++)
+	for(int i=0;i<maxNodes*swarmSize;i++)
     {
 		states[i]=0;
     }
@@ -300,12 +284,12 @@ void tAgent::resetBrain(void)
 
 void tAgent::updateStates(void)
 {
-	for (vector<tHMMU*>::iterator it = hmmus.begin(), end = hmmus.end(); it != end; ++it)
+	for(vector<tHMMU*>::iterator it = hmmus.begin(), end = hmmus.end(); it != end; ++it)
     {
 		(*it)->update(&states[0],&newStates[0]);
     }
     
-	for (int i=0;i<maxNodes*swarmSize;i++)
+	for(int i=0;i<maxNodes*swarmSize;i++)
     {
 		states[i]=newStates[i];
 		newStates[i]=0;
@@ -315,7 +299,7 @@ void tAgent::updateStates(void)
 
 void tAgent::showBrain(void)
 {
-	for (int i=0;i<maxNodes;i++)
+	for(int i=0;i<maxNodes;i++)
     {
 		cout<<(int)states[i];
     }
@@ -331,7 +315,7 @@ void tAgent::initialize(int x, int y, int d)
 	direction=d;
 	steps=0;
 	/*
-	if ((rand()&1)==0){
+	if((rand()&1)==0){
 		scramble[1]=2;
 		scramble[2]=1;
 	}
@@ -341,13 +325,13 @@ void tAgent::initialize(int x, int y, int d)
 tAgent* tAgent::findLMRCA(void)
 {
 	tAgent *r,*d;
-	if (ancestor==NULL)
+	if(ancestor==NULL)
 		return NULL;
 	else{
 		r=ancestor;
 		d=NULL;
 		while(r->ancestor!=NULL){
-			if (r->ancestor->nrPointingAtMe!=1)
+			if(r->ancestor->nrPointingAtMe!=1)
 				d=r;
 			r=r->ancestor;
 		}
@@ -356,22 +340,22 @@ tAgent* tAgent::findLMRCA(void)
 }
 
 void tAgent::saveFromLMRCAtoNULL(FILE *statsFile,FILE *genomeFile){
-	if (ancestor!=NULL)
+	if(ancestor!=NULL)
 		ancestor->saveFromLMRCAtoNULL(statsFile,genomeFile);
-	if (!saved){ 
+	if(!saved){ 
 		fprintf(statsFile,"%i	%i	%i	%f	%i	%f	%i	%i\n",ID,born,(int)genome.size(),fitness,bestSteps,(float)totalSteps/(float)nrOfOffspring,correct,incorrect);
 		fprintf(genomeFile,"%i	",ID);
-		for (int i=0;i<genome.size();i++)
+		for(int i=0;i<genome.size();i++)
 			fprintf(genomeFile,"	%i",genome[i]);
 		fprintf(genomeFile,"\n");
 		saved=true;
 	}
-	if ((saved)&&(retired)) genome.clear();
+	if((saved)&&(retired)) genome.clear();
 }
 
 /*
 void tAgent::saveLOD(FILE *statsFile,FILE *genomeFile){
-	if (ancestor!=NULL)
+	if(ancestor!=NULL)
 		ancestor->saveLOD(statsFile,genomeFile);
 #ifdef useANN
 	fprintf(genomeFile,"%i	",ID);
@@ -380,7 +364,7 @@ void tAgent::saveLOD(FILE *statsFile,FILE *genomeFile){
 #else	
 	fprintf(statsFile,"%i	%i	%i	%f	%i	%f	%i	%i\n",ID,born,(int)genome.size(),fitness,bestSteps,(float)totalSteps/(float)nrOfOffspring,correct,incorrect);
 	fprintf(genomeFile,"%i	",ID);
-	for (int i=0;i<genome.size();i++)
+	for(int i=0;i<genome.size();i++)
 		fprintf(genomeFile,"	%i",genome[i]);
 	fprintf(genomeFile,"\n");
 #endif
@@ -389,7 +373,7 @@ void tAgent::saveLOD(FILE *statsFile,FILE *genomeFile){
 
 void tAgent::showPhenotype(void)
 {
-	for (int i=0;i<hmmus.size();i++)
+	for(int i=0;i<hmmus.size();i++)
 		hmmus[i]->show();
 	cout<<"------"<<endl;
 }
@@ -404,28 +388,28 @@ void tAgent::saveToDot(const char *filename, bool predator)
     // determine which nodes to print (no connections = do not print)
     bool print_node[32];
     
-    for (i = 0; i < 32; i++)
+    for(i = 0; i < 32; i++)
     {
         print_node[i] = false;
     }
     
-    for (i=0;i<hmmus.size();i++)
+    for(i=0;i<hmmus.size();i++)
     {
-        for (j=0;j<hmmus[i]->ins.size();j++)
+        for(j=0;j<hmmus[i]->ins.size();j++)
         {
             print_node[hmmus[i]->ins[j]] = true;
         }
         
-        for (k=0;k<hmmus[i]->outs.size();k++)
+        for(k=0;k<hmmus[i]->outs.size();k++)
         {
             print_node[hmmus[i]->outs[k]] = true;
         }
     }
     
     // swarm agent input layer
-	for (node=0;node<12;node++)
+	for(node=0;node<12;node++)
     {
-        if (print_node[node])
+        if(print_node[node])
         {
             fprintf(f,"	%i [shape=invtriangle,style=filled,color=cornflowerblue];\n",node);
         }
@@ -435,18 +419,18 @@ void tAgent::saveToDot(const char *filename, bool predator)
     if (!predator)
     {
         // predator input layer
-        for (node=12;node<24;node++)
+        for(node=12;node<24;node++)
         {
-            if (print_node[node])
+            if(print_node[node])
             {
                 fprintf(f,"	%i [shape=invtriangle,style=filled,color=red];\n",node);
             }
         }
         
         // hidden states
-        for (node=24;node<30;node++)
+        for(node=24;node<30;node++)
         {
-            if (print_node[node])
+            if(print_node[node])
             {
                 fprintf(f,"	%i [shape=circle,color=black];\n",node);
             }
@@ -457,9 +441,9 @@ void tAgent::saveToDot(const char *filename, bool predator)
     else
     {
         // hidden states
-        for (node=12;node<30;node++)
+        for(node=12;node<30;node++)
         {
-            if (print_node[node])
+            if(print_node[node])
             {
                 fprintf(f,"	%i [shape=circle,color=black];\n",node);
             }
@@ -467,17 +451,17 @@ void tAgent::saveToDot(const char *filename, bool predator)
     }
     
     // outputs
-	for (node=30;node<32;node++)
+	for(node=30;node<32;node++)
     {
 		fprintf(f,"	%i [shape=circle,style=filled,color=green];\n",node);
     }
     
     // connections
-	for (i=0;i<hmmus.size();i++)
+	for(i=0;i<hmmus.size();i++)
     {
-		for (j=0;j<hmmus[i]->ins.size();j++)
+		for(j=0;j<hmmus[i]->ins.size();j++)
         {
-			for (k=0;k<hmmus[i]->outs.size();k++)
+			for(k=0;k<hmmus[i]->outs.size();k++)
             {
 				fprintf(f,"	%i	->	%i;\n",hmmus[i]->ins[j],hmmus[i]->outs[k]);
             }
@@ -490,9 +474,9 @@ void tAgent::saveToDot(const char *filename, bool predator)
         // inputs
         fprintf(f,"	{ rank=same; ");
         
-        for (node = 0; node < 12; node++)
+        for(node = 0; node < 12; node++)
         {
-            if (print_node[node])
+            if(print_node[node])
             {
                 fprintf(f, "%d; ", node);
             }
@@ -503,9 +487,9 @@ void tAgent::saveToDot(const char *filename, bool predator)
         // hidden states
         fprintf(f,"	{ rank=same; ");
         
-        for (node = 12; node < 30; node++)
+        for(node = 12; node < 30; node++)
         {
-            if (print_node[node])
+            if(print_node[node])
             {
                 fprintf(f, "%d; ", node);
             }
@@ -516,9 +500,9 @@ void tAgent::saveToDot(const char *filename, bool predator)
         // inputs
         fprintf(f,"	{ rank=same; ");
         
-        for (node = 0; node < 24; node++)
+        for(node = 0; node < 24; node++)
         {
-            if (print_node[node])
+            if(print_node[node])
             {
                 fprintf(f, "%d; ", node);
             }
@@ -529,9 +513,9 @@ void tAgent::saveToDot(const char *filename, bool predator)
         // hidden states
         fprintf(f,"	{ rank=same; ");
         
-        for (node = 24; node < 30; node++)
+        for(node = 24; node < 30; node++)
         {
-            if (print_node[node])
+            if(print_node[node])
             {
                 fprintf(f, "%d; ", node);
             }
@@ -552,11 +536,11 @@ void tAgent::saveToDotFullLayout(char *filename){
 	int i,j,k;
 	fprintf(f,"digraph brain {\n");
 	fprintf(f,"	ranksep=2.0;\n");
-	for (i=0;i<hmmus.size();i++){
+	for(i=0;i<hmmus.size();i++){
 		fprintf(f,"MM_%i [shape=box]\n",i);
-		for (j=0;j<hmmus[i]->ins.size();j++)
+		for(j=0;j<hmmus[i]->ins.size();j++)
 			fprintf(f,"	t0_%i -> MM_%i\n",hmmus[i]->ins[j],i);
-		for (k=0;k<hmmus[i]->outs.size();k++)
+		for(k=0;k<hmmus[i]->outs.size();k++)
 			fprintf(f,"	MM_%i -> t1_%i\n",i,hmmus[i]->outs[k]);
 		
 	}
@@ -572,8 +556,8 @@ void tAgent::setupDots(int x, int y,double spacing){
 	yo=-(yo/2.0);
 	dots.resize(x*y);
 	k=0;
-	for (i=0;i<x;i++)
-		for (j=0;j<y;j++){
+	for(i=0;i<x;i++)
+		for(j=0;j<y;j++){
 //			dots[k].xPos=(double)(rand()%(int)(spacing*x))+xo;
 //			dots[k].yPos=(double)(rand()%(int)(spacing*y))+yo;
 			dots[k].xPos=xo+((double)i*spacing);
@@ -591,18 +575,18 @@ void tAgent::saveLogicTable(const char *filename)
     fprintf(f,"s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,p15,,o1,o2\n");
     //fprintf(f,"s11,p12,p13,p14,p15,p16,p17,p18,p19,p20,p21,p22,p23,,o1,o2\n");
     
-    for (i = 0; i < (int)pow(2.0, 13.0); i++)
+    for(i = 0; i < (int)pow(2.0, 13.0); i++)
     {
         map<vector<int>, int> outputCounts;
         const int NUM_REPEATS = 1001;
         
         for (int repeat = 1; repeat < NUM_REPEATS; ++repeat)
         {
-            for (j = 0; j < 30; j++)
+            for(j = 0; j < 30; j++)
             {
                 if (j < 12)
                 {
-                    if (repeat == 1)
+                    if(repeat == 1)
                     {
                         fprintf(f,"%i,",(i >> j) & 1);
                     }
@@ -611,7 +595,7 @@ void tAgent::saveLogicTable(const char *filename)
                 }
                 else if (j == 15)
                 {
-                    if (repeat == 1)
+                    if(repeat == 1)
                     {
                         fprintf(f,"%i,",(i >> 12) & 1);
                     }
