@@ -134,7 +134,7 @@ void tAgent::ampUpStartCodons(void)
 	}
 }
 
-void tAgent::inherit(tAgent *from, double mutationRate, int theTime)
+void tAgent::inherit(tAgent *from, double mutationRate, int theTime, bool evolveRetina)
 {
 	int nucleotides=(int)from->genome.size();
 	int i,s,o,w;
@@ -147,6 +147,11 @@ void tAgent::inherit(tAgent *from, double mutationRate, int theTime)
 	genome.clear();
 	genome.resize(from->genome.size());
     visionAngle = from->visionAngle;
+    
+    if (evolveRetina && randDouble < 0.05)
+    {
+        visionAngle += (randDouble * 50.0) - 25.0;
+    }
     
 	for(i=0;i<nucleotides;i++)
     {

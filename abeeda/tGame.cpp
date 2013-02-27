@@ -63,7 +63,7 @@ tGame::tGame()
 tGame::~tGame() { }
 
 // runs the simulation for the given agent(s)
-string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_file, bool report, double safetyDist, double predatorVisionAngle, int killDelay, double confusionMultiplier)
+string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_file, bool report, double safetyDist, int killDelay, double confusionMultiplier)
 {
     // LOD data variables
     double swarmFitness = 0.0;
@@ -94,7 +94,11 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     double predY = (double)(randDouble * gridY * 2.0) - gridY;
     double predA = (int)(randDouble * 360.0);
     
+    // time delay in between predator attack attempts
     int delay = 0;
+    
+    // current predator's vision angle
+    double predatorVisionAngle = predatorAgent->visionAngle;
     
     // string containing the information to create a video of the simulation
     string reportString = "";
@@ -444,18 +448,12 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                         //don't bother if an agent is too far
                         if(d < preyVisionRange)
                         {
-                            // ignore if agent i isn't even facing agent j (won't be within retina)
-                            if (calcDistanceSquared(preyX[i] + cosLookup[(int)preyA[i]],
-                                                    preyY[i] + sinLookup[(int)preyA[i]],
-                                                    preyX[j], preyY[j]) < d)
+                            double angle = calcAngle(preyX[i], preyY[i], preyA[i], preyX[j], preyY[j]);
+                            
+                            //here we have to map the angle into the sensor, btw: angle in degrees
+                            if(fabs(angle) < preyVisionAngle) // prey has a limited vision field infront of it
                             {
-                                double angle = calcAngle(preyX[i], preyY[i], preyA[i], preyX[j], preyY[j]);
-                                
-                                //here we have to map the angle into the sensor, btw: angle in degrees
-                                if(fabs(angle) < preyVisionAngle) // prey has a limited vision field infront of it
-                                {
-                                    swarmAgent->states[(int)(angle / (preyVisionAngle / ((double)preySensors / 2.0)) + ((double)preySensors / 2.0)) + (i * maxNodes)] = 1;
-                                }
+                                swarmAgent->states[(int)(angle / (preyVisionAngle / ((double)preySensors / 2.0)) + ((double)preySensors / 2.0)) + (i * maxNodes)] = 1;
                             }
                         }
                     }
@@ -573,7 +571,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
     // output to data file, if provided
     if (data_file != NULL)
     {
-        fprintf(data_file, "%d,%f,%f,%d,%f,%f,%f,%f,%i,%i,%i,%f,%i\n",
+        fprintf(data_file, "%d,%f,%f,%d,%f,%f,%f,%f,%i,%i,%i,%f,%i,%f\n",
                 swarmAgent->born,                               // update born (prey)
                 swarmAgent->fitness,                            // swarm fitness
                 predatorAgent->fitness,                         // predator fitness
@@ -586,7 +584,8 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                 neuronsConnectedToPredatorRetina(swarmAgent),   // # neurons connected to predator part of retina (prey)
                 neuronsConnectedToPreyRetina(predatorAgent),    // # neurons connected to prey part of retina (predator)
                 mutualInformation(predatorAngle, preyAngle),    // mutual Information between prey flight angle and predator flight angle
-                numAttacks
+                numAttacks,                                     // # attacks made by the predator
+                predatorVisionAngle                             // vision angle of the current predator
                 );
     }
     
