@@ -585,7 +585,7 @@ string tGame::executeGame(tAgent* swarmAgent, tAgent* predatorAgent, FILE *data_
                 neuronsConnectedToPreyRetina(predatorAgent),    // # neurons connected to prey part of retina (predator)
                 mutualInformation(predatorAngle, preyAngle),    // mutual Information between prey flight angle and predator flight angle
                 numAttacks,                                     // # attacks made by the predator
-                predatorVisionAngle                             // vision angle of the current predator
+                predatorVisionAngle * 2.0                       // vision angle of the current predator
                 );
     }
     
